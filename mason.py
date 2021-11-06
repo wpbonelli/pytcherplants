@@ -39,11 +39,10 @@ def analyze_colors(cluster):
     return rect, normalized_colors
 
 
-def color_analysis_1(image, i, output_directory, base_name):
-    Z = np.float32(image.reshape((-1, 3)))
+def color_analysis_1(image, i, output_directory, base_name, k=10):
+    z = np.float32(image.reshape((-1, 3)))
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    K = 6
-    _, labels, centers = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+    _, labels, centers = cv2.kmeans(z, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
     labels = labels.reshape((image.shape[:-1]))
     reduced = np.uint8(centers)[labels]
 
@@ -164,20 +163,6 @@ def remove_grays_2(image, opened, base_name):
     # cv2.imwrite(join(output, base_name + '.mask.gray.inv.png'), mask_gray_inv)
     # cv2.imwrite(join(output, base_name + '.mask.gray.png'), mask_gray)
     return mask_gray
-
-
-def remove_grays_3(image, base_name):
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    h, s, v = cv2.split(hsv)
-    thresh1 = cv2.threshold(s, 90, 255, cv2.THRESH_BINARY)[1]
-    thresh2 = cv2.threshold(v, 2, 255, cv2.THRESH_BINARY)[1]
-    thresh2 = 255 - thresh2
-    hsv_mask = cv2.add(thresh1, thresh2)
-    cv2.imwrite(join(output, base_name + '.hsvmask2.png'), hsv_mask)
-    hsv_result = image.copy()
-    hsv_result[hsv_mask == 0] = (0, 0, 0)
-    cv2.imwrite(join(output, base_name + '.nograys2.png'), hsv_result)
-    return hsv_result
 
 
 def mask_1(image, base_name):
