@@ -1,10 +1,13 @@
 This repository is for Mason McNair's pitcher plant project, involving geometric trait and color analysis from top-down images.
 
+![Optional Text](cropped_averaged.png)
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 
 - [Project layout](#project-layout)
+- [General approach](#general-approach)
 - [Setting up a development environment](#setting-up-a-development-environment)
   - [Requirements](#requirements)
   - [Installing dependencies](#installing-dependencies)
@@ -14,15 +17,18 @@ This repository is for Mason McNair's pitcher plant project, involving geometric
   - [Running the code](#running-the-code)
     - [Jupyter notebooks](#jupyter-notebooks)
     - [Python scripts](#python-scripts)
-- [Authors](#authors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-![Optional Text](cropped_averaged.png)
+Code adapted by Wes Bonelli from Suxing Liu's [SMART](https://github.com/Computational-Plant-Science/SMART) pipeline for arabidopsis rosette image analysis.
 
 ## Project layout
 
 Python scripts for analyzing several images at once are located in `scripts`, Jupyter notebooks detailing preprocessing and analysis methods are in `notebooks`, and a few test images from the larger dataset are included in `testdata`.
+
+## General approach
+
+Briefly, each image is preprocessed to detect and mask individual pots, then the color distribution within each pot is analyzed via k-means with k = 10. The top k colors and corresponding pixel frequencies/probability mass are calculated.
 
 ## Setting up a development environment
 
@@ -75,7 +81,3 @@ This will serve the project at `localhost:8888`. Then navigate to the `notebooks
 #### Python scripts
 
 Scripts can be run from the project root with `python3 scripts/<filename>`.
-
-## Authors
-
-Motivation and experimental data provided by Mason McNair. Code adapted by Wes Bonelli from Suxing Liu's [SMART](https://github.com/Computational-Plant-Science/SMART) pipeline for arabidopsis rosette image analysis.
