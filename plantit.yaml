@@ -1,0 +1,24 @@
+name: "PytcherPlants"
+author: "Wes Bonelli"
+public: False
+image: docker://wbonelli/pytcherplants
+commands: /opt/pytcherplants/scripts/batch2.py -i $INPUT -o OUTPUT -ft $PATTERNS 
+input:
+  kind: directory
+  path:
+  filetypes:
+    - jpg
+    - png
+output:
+  path:
+  include:
+    patterns:
+      - png
+      - csv
+      - xlsx
+logo: segmented.png
+jobqueue:
+  walltime: "04:00:00"
+  memory: "5GB"
+  processes: 1
+  cores: 2
