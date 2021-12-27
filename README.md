@@ -62,10 +62,10 @@ Any Python3.6+ should support the dependencies in `requirements.txt`. The enviro
 
 #### Docker
 
-The preexisting Docker image for Suxing Liu's Speedy Measurement of Arabidopsis Rosette Traits (SMART) pipeline has all necessary dependencies and can be used to run the code in this repository. From the project root, run:
+There is a preconfigured Docker image available on the Docker Hub at `wbonelli/pytcher-plants`. From the project root, run:
 
 ```shell
-docker run -it -p 8888:8888 -v $(pwd):/opt/dev -w /opt/dev computationalplantscience/smart bash
+docker run -it -p 8888:8888 -v $(pwd):/opt/dev -w /opt/dev wbonelli/pytcher-plants bash
 ```
 
 This will mount the project root into the working directory inside the container. It also opens port 8888 in case you want to use Jupyter.
@@ -80,4 +80,10 @@ This will serve the project at `localhost:8888`. Then navigate to the `notebooks
 
 #### Python scripts
 
-Scripts can be run from the project root with `python3 scripts/<filename>`.
+Scripts can be run from the project root with `python3 scripts/<filename>`. The `pytcher_plants.py` script is a self-contained solution for processing one more image files (in parallel, if the host has multiple cores available). It can be invoked with:
+
+```shell
+python3 pytcher_plants.py -i <input file or directory> -o <output directory>
+```
+
+By default JPG and PNG files are supported. You can select one or the other by passing `png` or `jpg` to the `--filetypes` flag (shorthand `-ft`).

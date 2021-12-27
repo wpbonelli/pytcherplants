@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 LABEL maintainer="Wes Bonelli"
 
-COPY . /opt/pytcherplants
+COPY . /opt/pytcher-plants
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -18,7 +18,7 @@ RUN apt-get update && \
     libgtk2.0-dev
 
 RUN pip3 install --upgrade pip && \
-    pip3 install -r /opt/pytcherplants/requirements.txt
+    pip3 install -r /opt/pytcher-plants/requirements.txt
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8

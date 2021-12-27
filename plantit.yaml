@@ -1,8 +1,8 @@
-name: "PytcherPlants"
+name: "Pytcher Plants"
 author: "Wes Bonelli"
 public: False
-image: docker://wbonelli/pytcherplants
-commands: /opt/pytcherplants/scripts/batch2.py -i $INPUT -o OUTPUT -ft $PATTERNS 
+image: docker://wbonelli/pytcher-plants
+commands: /opt/pytcher-plants/scripts/pytcher_plants.py -i $INPUT -o OUTPUT -ft $PATTERNS
 input:
   kind: directory
   path:
@@ -16,9 +16,8 @@ output:
       - png
       - csv
       - xlsx
-logo: segmented.png
 jobqueue:
-  walltime: "04:00:00"
+  walltime: "01:00:00"
   memory: "5GB"
   processes: 1
   cores: 2
