@@ -6,7 +6,7 @@ commands: /opt/pytcher-plants/scripts/pytcher_plants.py -i $INPUT -o OUTPUT -ft 
 projects:
   - db74f053-2a1f-44f0-8864-f1938ca4680a
 input:
-  kind: directory
+  kind: files
   path:
   filetypes:
     - jpg
