@@ -2,7 +2,7 @@ name: "Pytcher Plants"
 author: "Wes Bonelli"
 public: False
 image: docker://wbonelli/pytcher-plants
-commands: /opt/pytcher-plants/scripts/pytcher_plants.py -i $INPUT -o $OUTPUT -ft $PATTERNS
+commands: python3 /opt/pytcher-plants/scripts/pytcher_plants.py -i $INPUT -o $OUTPUT -ft $PATTERNS
 projects:
   - db74f053-2a1f-44f0-8864-f1938ca4680a
   - 2448ab47-d0be-41e4-a751-5cc1ece17a32
