@@ -1,5 +1,6 @@
 import argparse
 import multiprocessing
+import sys
 from contextlib import closing
 from glob import glob
 from os.path import join
@@ -66,6 +67,7 @@ def color_analysis(image, i, k=10):
     # cv2.imwrite(f"{join(output_directory, base_name + '.reduced.png')}", reduced)
 
     counts = dict()
+    ex_reduced = None
     for ii, cc in enumerate(centers):
         if all(c < 1 for c in cc):
             print(f"Plant {i} color cluster {ii} is background, ignoring")
@@ -79,17 +81,18 @@ def color_analysis(image, i, k=10):
         ex_reduced = cv2.bitwise_and(reduced, mask)
         counts[hex] = len(np.nonzero(ex_reduced)[0])
 
-    return counts, ex_reduced
+    return counts, ex_reduced if ex_reduced is not None else np.zeros_like(reduced)
 
 
 def process(file, output_directory, base_name, count=6):
     image = cv2.imread(file)
-    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # apply blur
-    blur = cv2.blur(rgb, (25, 25))
+    blur = cv2.blur(image, (25, 25))
     gblur = cv2.GaussianBlur(blur, (11, 75), cv2.BORDER_DEFAULT)
     cv2.imwrite(f"{join(output_directory, base_name + '.blurred.png')}", gblur)
+    # sys.exit(1)
 
     # apply color mask
     lower_blue = np.array([0, 70, 40])
@@ -99,11 +102,11 @@ def process(file, output_directory, base_name, count=6):
     opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     dilated = cv2.dilate(opened, np.ones((5, 5)))
     masked = cv2.bitwise_and(image, image, mask=dilated)
-    rgb_masked = cv2.cvtColor(masked, cv2.COLOR_BGR2RGB)
-    cv2.imwrite(f"{join(output_directory, base_name + '.masked.png')}", rgb_masked)
+    cv2.imwrite(f"{join(output_directory, base_name + '.masked.png')}", masked)
+    # sys.exit(1)
 
     # find and crop to contours
-    ctrs = rgb_masked.copy()
+    ctrs = masked.copy()
     _, thresh = cv2.threshold(mask, 40, 255, 0)
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cv2.drawContours(ctrs, contours, -1, 255, 3)
@@ -112,7 +115,7 @@ def process(file, output_directory, base_name, count=6):
     cropped = []
     for i, c in enumerate(largest):
         x, y, w, h = cv2.boundingRect(c)
-        ctr = rgb_masked.copy()
+        ctr = masked.copy()
         cropped.append(ctr[y:y + h, x:x + w])
         print(f"Plant {i} cropped")
         cv2.rectangle(ctrs, (x, y), (x + w, y + h), (36, 255, 12), 3)
@@ -194,14 +197,14 @@ if __name__ == '__main__':
 
     if Path(input).is_dir():
         processes = psutil.cpu_count(logical=False)
-        print(f"Using {processes} processes for {len(files)} images")
-        with closing(multiprocessing.Pool(processes=processes)) as pool:
-            args = [(file, output, Path(file).stem, count) for file in files]
-            pool.starmap(process, args)
-            pool.terminate()
-        # for file in files:
-        #     print(f"Processing image {file}")
-        #     process(file, output, Path(file).stem, count)
+        # print(f"Using {processes} processes for {len(files)} images")
+        # with closing(multiprocessing.Pool(processes=processes)) as pool:
+        #     args = [(file, output, Path(file).stem, count) for file in files]
+        #     pool.starmap(process, args)
+        #     pool.terminate()
+        for file in files:
+            print(f"Processing image {file}")
+            process(file, output, Path(file).stem, count)
     else:
         print(f"Processing image {input}")
         process(input, output, Path(input).stem, count)
