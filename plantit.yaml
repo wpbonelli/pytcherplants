@@ -21,6 +21,6 @@ output:
       - xlsx
 jobqueue:
   walltime: "01:00:00"
-  memory: "5GB"
+  memory: "10GB"
   processes: 1
-  cores: 2
+  cores: 1
