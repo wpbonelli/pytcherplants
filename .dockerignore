@@ -2,3 +2,5 @@ data*
 output*
 plantit.yaml
 thresholder.py
+**/.ipynb_checkpoints/**
+venv
