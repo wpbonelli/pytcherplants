@@ -18,3 +18,4 @@ Pillow
 jupyter
 nbconvert
 plotly
+kaleido

@@ -80,10 +80,10 @@ This will serve the project at `localhost:8888`. Then navigate to the `notebooks
 
 #### Python scripts
 
-Scripts can be run from the project root with `python3 scripts/<filename>`. The `pytcher_plants.py` script is a self-contained solution for processing one more image files (in parallel, if the host has multiple cores available). It can be invoked with:
+Scripts can be run from the project root with `python3 pytcher_plants/<filename>`. The `cli.py` script is a self-contained solution for processing one more image files (in parallel, if the host has multiple cores available). It can be invoked with:
 
 ```shell
-python3 pytcher_plants.py -i <input file or directory> -o <output directory>
+python3 pytcher_plants/cli.py -i <input file or directory> -o <output directory>
 ```
 
 By default JPG and PNG files are supported. You can select one or the other by passing `png` or `jpg` to the `--filetypes` flag (shorthand `-ft`).

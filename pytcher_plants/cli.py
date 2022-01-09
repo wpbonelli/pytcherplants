@@ -5,12 +5,17 @@ from contextlib import closing
 from glob import glob
 from os.path import join
 from pathlib import Path
+from colorsys import rgb_to_hsv, hsv_to_rgb
+from collections import Counter, OrderedDict
 
+from scipy.cluster.vq import kmeans, kmeans2
+import plotly.graph_objects as go
+import plotly.express as px
 import cv2
+import pandas as pd
 import matplotlib as mpl
 import psutil
 from matplotlib import pyplot as plt
-import plotly.express as px
 import numpy as np
 from heapq import nlargest
 from pprint import pprint
@@ -19,15 +24,24 @@ import csv
 
 mpl.rcParams['figure.dpi'] = 300
 
-
-def rgb2hex(color):
-    return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
-
-
 # referenced from https://stackoverflow.com/a/29643643/6514033
 def hex2rgb(color):
     return mpl.colors.to_rgb(color)
 
+def rgb2hex(color):
+    return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
+
+def hue_to_rgb(hue):
+    r, g, b = hsv_to_rgb(hue, 0.7, 0.7)
+    return float(r), float(g), float(b)
+
+def hue_to_rgb_formatted(k):
+    r, g, b = hue_to_rgb(float(k / 360))
+    return f"rgb({int(r * 256)},{int(g * 256)},{int(b * 256)})"
+
+def row_to_hsv(row):
+    hsv = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
+    return [hsv[0], hsv[1], hsv[2]]
 
 def color_analysis(image, i, k=10):
     print(f"K-means color clustering for plant {i}, k = {k}...")
@@ -164,12 +178,13 @@ def process(file, output_directory, base_name, count=6):
         ys = []
         zs = []
         ss = []
+        total = sum([f[1] for f in freqs_rgb])
 
         for f in freqs_rgb:
             xs.append(f[0][0])
             ys.append(f[0][1])
             zs.append(f[0][2])
-            ss.append(f[1] / 100)
+            ss.append((f[1] / total) * 1000)
 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
@@ -178,6 +193,81 @@ def process(file, output_directory, base_name, count=6):
         plt.ylabel("G")
         ax.set_zlabel("B")
         plt.savefig(join(output_directory, base_name + 'plant' + str(i) + '.avg.rgb.png'))
+        plt.clf()
+
+
+def hsv_analysis(treatment, output_directory, subset):
+    ranges = {((k * 10) + 5):list(range(10 * k, (10 * k) + 10)) for k in range(0, 36)}
+    ranges_round = {min(v):k for k, v in ranges.items()}
+
+    # format HSV columns, convert to [1, 360] range, create hue bands (72 equally spaced from 5 to 355)
+    subset_hsv = subset[['H', 'S', 'V']].astype(float)
+    subset_hsv['HH'] = subset_hsv.apply(lambda row: int(float(row['H']) * 360), axis=1)
+    subset_hsv['Band'] = subset_hsv.apply(lambda row: ranges_round[round(int(row['HH']), -1)], axis=1)
+
+    # count clusters per band
+    counts = Counter(subset_hsv['Band'])
+    counts_keys = list(counts.keys())
+    for key in [k for k in ranges.keys() if k not in counts_keys]: counts[key] = 0  # pad zeroes
+    for key in [k for k in ranges.keys() if 125 < k < 360]: counts[key] = 0         # remove outliers (non red/green)
+    total = sum(counts.values())
+    mass = OrderedDict(sorted({k:float(v / total) for k, v in counts.items()}.items()))
+    mass_df = pd.DataFrame(zip([str(k) for k in mass.keys()], mass.values()), columns=['band', 'mass'])
+
+    # radial bar plot for color distribution
+    fig = px.bar_polar(
+        mass_df,
+        title=f"Hue distribution ({treatment})",
+        r='mass',
+        range_r=[0, max(mass_df['mass'])],
+        theta='band',
+        range_theta=[0,360],
+        color='band',
+        color_discrete_map={str(k):hue_to_rgb_formatted(k) for k in counts.keys()})
+    fig.update_layout(showlegend=False, )
+    fig.write_image(join(output_directory, treatment + '.png'))
+
+
+def post_process(input_directory, output_directory):
+    images = glob(join(input_directory, '*.JPG')) + glob(join(input_directory, '*.jpg'))
+    print("Input images:", len(images))
+
+    results = glob(join(output_directory, '*.CSV')) + glob(join(output_directory, '*.csv'))
+    print("Result files:", len(results))
+
+    headers = []
+    rows = []
+    for result in results:
+        with open(result, 'r') as file:
+            reader = csv.reader(file)
+            if len(headers) == 0:
+                headers = next(reader, None)
+            else:
+                next(reader, None)
+            for row in reader: rows.append(row)
+
+    # create dataframe from rows
+    df = pd.DataFrame(rows, columns=headers)
+
+    # extract treatment from image name
+    df['Treatment'] = df.apply(lambda row: 'Control' if 'control' in row['Image'].lower() else (
+        'MaxSea' if 'maxsea' in row['Image'].lower() else ('CalMag' if 'calmag' in row['Image'].lower() else np.NaN)), axis=1)
+
+    # drop rows with unknown treatment (for now)
+    df.dropna(how='any', inplace=True)
+
+    # add columns for HSV color representation
+    df['H'], df['S'], df['V'] = zip(*df.apply(lambda row: row_to_hsv(row), axis=1))
+
+    # color analysis for each treatment separately
+    treatments = list(np.unique(df['Treatment']))
+    for treatment in treatments:
+        # get subset corresponding to this treatment
+        subset = df[df['Treatment'] == treatment]
+        print(treatment + ":", len(subset))
+
+        # hue analysis
+        hsv_analysis(treatment, output_directory, subset)
 
 
 if __name__ == '__main__':
@@ -197,9 +287,13 @@ if __name__ == '__main__':
     count = int(args['count'])
 
     if Path(input).is_dir():
+        # analyze each file
         for file in files:
             print(f"Processing image {file}")
             process(file, output, Path(file).stem, count)
+
+        # post-processing/aggregations
+        post_process(input, output,)
 
         # TODO: kmeans function doesn't seem to be threadsafe
         #  (running it on multiple cores in parallel causes all but 1 to fail)
