@@ -10,6 +10,7 @@ import cv2
 import matplotlib as mpl
 import psutil
 from matplotlib import pyplot as plt
+import plotly.express as px
 import numpy as np
 from heapq import nlargest
 from pprint import pprint
@@ -196,15 +197,20 @@ if __name__ == '__main__':
     count = int(args['count'])
 
     if Path(input).is_dir():
-        processes = psutil.cpu_count(logical=False)
+        for file in files:
+            print(f"Processing image {file}")
+            process(file, output, Path(file).stem, count)
+
+        # TODO: kmeans function doesn't seem to be threadsafe
+        #  (running it on multiple cores in parallel causes all but 1 to fail)
+        #  ...reinstate if workaround found
+        #
+        # processes = psutil.cpu_count(logical=False)
         # print(f"Using {processes} processes for {len(files)} images")
         # with closing(multiprocessing.Pool(processes=processes)) as pool:
         #     args = [(file, output, Path(file).stem, count) for file in files]
         #     pool.starmap(process, args)
         #     pool.terminate()
-        for file in files:
-            print(f"Processing image {file}")
-            process(file, output, Path(file).stem, count)
     else:
         print(f"Processing image {input}")
         process(input, output, Path(input).stem, count)
