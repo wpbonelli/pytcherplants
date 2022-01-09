@@ -19,3 +19,4 @@ jupyter
 nbconvert
 plotly
 kaleido
+click

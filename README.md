@@ -78,12 +78,23 @@ A Jupyter server can be started with `jupyter notebook` from the project root. (
 
 This will serve the project at `localhost:8888`. Then navigate to the `notebooks` directory, open a notebook, and refer to [the Jupyter docs](https://jupyter.org/documentation) if unfamiliar.
 
-#### Python scripts
+#### Python CLI
 
-Scripts can be run from the project root with `python3 pytcher_plants/<filename>`. The `cli.py` script is a self-contained solution for processing one more image files (in parallel, if the host has multiple cores available). It can be invoked with:
+The Python CLI can be invoked with `pytcher_plants/cli.py`. This script includes commands for processing one more image files (in parallel, if the host has multiple cores available) as well as post-processing/aggregations after images are analyzed.
+
+##### Processing (image analysis)
 
 ```shell
-python3 pytcher_plants/cli.py -i <input file or directory> -o <output directory>
+python3 pytcher_plants/cli.py process -i <input file or directory> -o <output directory>
 ```
 
 By default JPG and PNG files are supported. You can select one or the other by passing `png` or `jpg` to the `--filetypes` flag (shorthand `-ft`).
+
+You can also specify the number of plants per image by providing an integer `--count`. If this argument is not provided, the software will keep the top $n$ largest contours, of those with area greater than a threshold value `--min_area` (if this value is not provided, an area equivalent to a (w/5)x(h/5) square is used).
+
+##### Post-processing (aggregations)
+
+```shell
+python3 pytcher_plants/cli.py postprocess -i <input file or directory> -o <output directory>
+```
+

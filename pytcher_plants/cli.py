@@ -1,20 +1,11 @@
-import argparse
-import multiprocessing
-import sys
-from contextlib import closing
 from glob import glob
 from os.path import join
 from pathlib import Path
-from colorsys import rgb_to_hsv, hsv_to_rgb
-from collections import Counter, OrderedDict
 
-from scipy.cluster.vq import kmeans, kmeans2
-import plotly.graph_objects as go
-import plotly.express as px
 import cv2
+import click
 import pandas as pd
 import matplotlib as mpl
-import psutil
 from matplotlib import pyplot as plt
 import numpy as np
 from heapq import nlargest
@@ -22,84 +13,22 @@ from pprint import pprint
 import seaborn as sns
 import csv
 
+from pytcher_plants.color import rgb_analysis, hsv_analysis
+from pytcher_plants.utils import row_to_hsv, color_analysis, hex2rgb
+
 mpl.rcParams['figure.dpi'] = 300
 
-# referenced from https://stackoverflow.com/a/29643643/6514033
-def hex2rgb(color):
-    return mpl.colors.to_rgb(color)
 
-def rgb2hex(color):
-    return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
+def analyze_file(file, output_directory, base_name, count: int = None, min_area: int = None):
+    """
+    Analyze a single image file.
 
-def hue_to_rgb(hue):
-    r, g, b = hsv_to_rgb(hue, 0.7, 0.7)
-    return float(r), float(g), float(b)
+    :param file: The image file
+    :param output_directory: The output directory
+    :param base_name: The file's basename (without extension)
+    :param count: The number of plants in the image (automatically detected if not provided)
+    """
 
-def hue_to_rgb_formatted(k):
-    r, g, b = hue_to_rgb(float(k / 360))
-    return f"rgb({int(r * 256)},{int(g * 256)},{int(b * 256)})"
-
-def row_to_hsv(row):
-    hsv = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
-    return [hsv[0], hsv[1], hsv[2]]
-
-def color_analysis(image, i, k=10):
-    print(f"K-means color clustering for plant {i}, k = {k}...")
-
-    z = np.float32(image.reshape((-1, 3)))
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    _, labels, centers = cv2.kmeans(z, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-    labels = labels.reshape((image.shape[:-1]))
-    reduced = np.uint8(centers)[labels]
-
-    print(f"Plant {i} pre-averaged with k = {k} clusters")
-
-    # remove blues (pot and label), second pass (slightly different range than before)
-    lower_blue = np.array([0, 38, 40])
-    upper_blue = np.array([39, 255, 255])
-
-    hsv = cv2.cvtColor(reduced, cv2.COLOR_RGB2HSV)
-    mask = cv2.inRange(hsv, lower_blue, upper_blue)
-    masked = cv2.bitwise_and(image, image, mask=mask)
-
-    print(f"Plant {i} blues removed")
-
-    mask = cv2.cvtColor(np.zeros_like(reduced), cv2.COLOR_RGB2GRAY)
-    res = np.zeros_like(reduced)
-    _, thresh = cv2.threshold(cv2.cvtColor(masked.copy(), cv2.COLOR_BGR2GRAY), 60, 255, 0)
-    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(mask, contours, -1, 255, -1)
-    res[mask == 255] = image[mask == 255]
-    print(f"Plant {i} re-masked after secondary preprocessing")
-
-    z = np.float32(res.reshape((-1, 3)))
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    _, labels, centers = cv2.kmeans(z, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-    labels = labels.reshape((res.shape[:-1]))
-    reduced = np.uint8(centers)[labels]
-
-    print(f"Plant {i} averaged with k = {k} clusters:")
-    # cv2.imwrite(f"{join(output_directory, base_name + '.reduced.png')}", reduced)
-
-    counts = dict()
-    ex_reduced = None
-    for ii, cc in enumerate(centers):
-        if all(c < 1 for c in cc):
-            print(f"Plant {i} color cluster {ii} is background, ignoring")
-            continue
-
-        hex = rgb2hex(cc)
-        print(f"Plant {i} color cluster {ii}: {hex}")
-
-        mask = cv2.inRange(labels, ii, ii)
-        mask = np.dstack([mask] * 3)  # Make it 3 channel
-        ex_reduced = cv2.bitwise_and(reduced, mask)
-        counts[hex] = len(np.nonzero(ex_reduced)[0])
-
-    return counts, ex_reduced if ex_reduced is not None else np.zeros_like(reduced)
-
-
-def process(file, output_directory, base_name, count=6):
     image = cv2.imread(file)
     # rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -125,8 +54,12 @@ def process(file, output_directory, base_name, count=6):
     _, thresh = cv2.threshold(mask, 40, 255, 0)
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cv2.drawContours(ctrs, contours, -1, 255, 3)
-    keep = 6
-    largest = nlargest(keep, contours, key=cv2.contourArea)
+    keep = count if count is not None and count > 0 else 100  # what is a suitable maximum?
+    divisor = 8
+    min_area = min_area if min_area is not None and min_area > 0 else ((image.shape[0] / divisor) * (image.shape[1] / divisor))
+    print(f"Keeping top {keep} contours with area > {min_area}...")
+    largest = [c for c in nlargest(keep, contours, key=cv2.contourArea) if cv2.contourArea(c) > min_area]
+    print(f"Kept {len(largest)} contours")
     cropped = []
     for i, c in enumerate(largest):
         x, y, w, h = cv2.boundingRect(c)
@@ -184,7 +117,7 @@ def process(file, output_directory, base_name, count=6):
             xs.append(f[0][0])
             ys.append(f[0][1])
             zs.append(f[0][2])
-            ss.append((f[1] / total) * 1000)
+            ss.append((f[1] / total) * 10000)
 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
@@ -196,39 +129,15 @@ def process(file, output_directory, base_name, count=6):
         plt.clf()
 
 
-def hsv_analysis(treatment, output_directory, subset):
-    ranges = {((k * 10) + 5):list(range(10 * k, (10 * k) + 10)) for k in range(0, 36)}
-    ranges_round = {min(v):k for k, v in ranges.items()}
+def analyze_results(input_directory, output_directory):
+    """
+    Post-processing and aggregations, meant to run after images are processed.
 
-    # format HSV columns, convert to [1, 360] range, create hue bands (72 equally spaced from 5 to 355)
-    subset_hsv = subset[['H', 'S', 'V']].astype(float)
-    subset_hsv['HH'] = subset_hsv.apply(lambda row: int(float(row['H']) * 360), axis=1)
-    subset_hsv['Band'] = subset_hsv.apply(lambda row: ranges_round[round(int(row['HH']), -1)], axis=1)
+    :param input_directory: the directory containing input images
+    :param output_directory: the directory containing result files
+    :return:
+    """
 
-    # count clusters per band
-    counts = Counter(subset_hsv['Band'])
-    counts_keys = list(counts.keys())
-    for key in [k for k in ranges.keys() if k not in counts_keys]: counts[key] = 0  # pad zeroes
-    for key in [k for k in ranges.keys() if 125 < k < 360]: counts[key] = 0         # remove outliers (non red/green)
-    total = sum(counts.values())
-    mass = OrderedDict(sorted({k:float(v / total) for k, v in counts.items()}.items()))
-    mass_df = pd.DataFrame(zip([str(k) for k in mass.keys()], mass.values()), columns=['band', 'mass'])
-
-    # radial bar plot for color distribution
-    fig = px.bar_polar(
-        mass_df,
-        title=f"Hue distribution ({treatment})",
-        r='mass',
-        range_r=[0, max(mass_df['mass'])],
-        theta='band',
-        range_theta=[0,360],
-        color='band',
-        color_discrete_map={str(k):hue_to_rgb_formatted(k) for k in counts.keys()})
-    fig.update_layout(showlegend=False, )
-    fig.write_image(join(output_directory, treatment + '.png'))
-
-
-def post_process(input_directory, output_directory):
     images = glob(join(input_directory, '*.JPG')) + glob(join(input_directory, '*.jpg'))
     print("Input images:", len(images))
 
@@ -267,33 +176,44 @@ def post_process(input_directory, output_directory):
         print(treatment + ":", len(subset))
 
         # hue analysis
+        rgb_analysis(treatment, output_directory, subset)
         hsv_analysis(treatment, output_directory, subset)
 
 
-if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-i", "--input", required=True, help="Input path")
-    ap.add_argument("-o", "--output", required=True, help="Output path")
-    ap.add_argument("-ft", "--filetypes", required=False, default='png,jpg', help="Image filetypes")
-    ap.add_argument("-c", "--count", required=False, default=6, help="Number of individuals")
+@click.group()
+def cli():
+    pass
 
-    args = vars(ap.parse_args())
-    input = args['input']
-    output = args['output']
-    extensions = args['filetypes'].split(',') if 'filetypes' in args else []
+
+@cli.command()
+@click.option('--input_directory', '-i', required=True, type=str)
+@click.option('--output_directory', '-o', required=True, type=str)
+@click.option('--filetypes', '-p', multiple=True, type=str)
+@click.option('--count', '-c', required=False, type=int, default=6)
+@click.option('--min_area', '-m', required=False, type=int)
+def process(input_directory, output_directory, filetypes, count, min_area):
+    # ap = argparse.ArgumentParser()
+    # ap.add_argument("-i", "--input", required=True, help="Input path")
+    # ap.add_argument("-o", "--output", required=True, help="Output path")
+    # ap.add_argument("-ft", "--filetypes", required=False, default='png,jpg', help="Image filetypes")
+    # ap.add_argument("-c", "--count", required=False, default=6, help="Number of individuals")
+
+    # args = vars(ap.parse_args())
+    # input_directory = args['input']
+    # output_directory = args['output']
+    # extensions = args['filetypes'].split(',') if 'filetypes' in args else []
+    # count = int(args['count'])
+
+    if len(filetypes) == 0: filetypes = ['png', 'jpg']
+    extensions = filetypes
     extensions = [e for es in [[extension.lower(), extension.upper()] for extension in extensions] for e in es]
-    patterns = [join(input, f"*.{p}") for p in extensions]
+    patterns = [join(input_directory, f"*.{p}") for p in extensions]
     files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
-    count = int(args['count'])
 
-    if Path(input).is_dir():
-        # analyze each file
+    if Path(input_directory).is_dir():
         for file in files:
             print(f"Processing image {file}")
-            process(file, output, Path(file).stem, count)
-
-        # post-processing/aggregations
-        post_process(input, output,)
+            analyze_file(file, output_directory, Path(file).stem, count, min_area)
 
         # TODO: kmeans function doesn't seem to be threadsafe
         #  (running it on multiple cores in parallel causes all but 1 to fail)
@@ -307,4 +227,15 @@ if __name__ == '__main__':
         #     pool.terminate()
     else:
         print(f"Processing image {input}")
-        process(input, output, Path(input).stem, count)
+        analyze_file(input, output_directory, Path(input_directory).stem, count, min_area)
+
+
+@cli.command()
+@click.option('--input_directory', '-i', required=True, type=str)
+@click.option('--output_directory', '-o', required=True, type=str)
+def postprocess(input_directory, output_directory):
+    analyze_results(input_directory, output_directory)
+
+
+if __name__ == '__main__':
+    cli()
