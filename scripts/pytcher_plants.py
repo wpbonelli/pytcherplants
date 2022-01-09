@@ -91,7 +91,7 @@ def process(file, output_directory, base_name, count=6):
     # apply blur
     blur = cv2.blur(image, (25, 25))
     gblur = cv2.GaussianBlur(blur, (11, 75), cv2.BORDER_DEFAULT)
-    cv2.imwrite(f"{join(output_directory, base_name + '.blurred.png')}", gblur)
+    # cv2.imwrite(f"{join(output_directory, base_name + '.blurred.png')}", gblur)
     # sys.exit(1)
 
     # apply color mask
@@ -102,7 +102,7 @@ def process(file, output_directory, base_name, count=6):
     opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     dilated = cv2.dilate(opened, np.ones((5, 5)))
     masked = cv2.bitwise_and(image, image, mask=dilated)
-    cv2.imwrite(f"{join(output_directory, base_name + '.masked.png')}", masked)
+    # cv2.imwrite(f"{join(output_directory, base_name + '.masked.png')}", masked)
     # sys.exit(1)
 
     # find and crop to contours
@@ -132,7 +132,7 @@ def process(file, output_directory, base_name, count=6):
 
         for i, crp in enumerate(cropped):
             cluster_freqs, ex_reduced = color_analysis(cv2.cvtColor(crp.copy(), cv2.COLOR_BGR2RGB), i)
-            cv2.imwrite(f"{join(output_directory, base_name + '.exreduced.png')}", ex_reduced)
+            # cv2.imwrite(f"{join(output_directory, base_name + '.exreduced.png')}", ex_reduced)
             freqs.append(cluster_freqs)
             print(f"Image {base_name} plant {i} color cluster pixel frequencies:")
             pprint(cluster_freqs)
