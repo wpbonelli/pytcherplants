@@ -14,7 +14,7 @@ import seaborn as sns
 import csv
 
 from pytcher_plants.color import rgb_analysis, hsv_analysis
-from pytcher_plants.utils import row_to_hsv, color_analysis, hex2rgb
+from pytcher_plants.utils import row_to_hsv, color_analysis, hex2rgb, get_treatment
 
 mpl.rcParams['figure.dpi'] = 300
 
@@ -159,8 +159,7 @@ def analyze_results(input_directory, output_directory):
     df = pd.DataFrame(rows, columns=headers)
 
     # extract treatment from image name
-    df['Treatment'] = df.apply(lambda row: 'Control' if 'control' in row['Image'].lower() else (
-        'MaxSea' if 'maxsea' in row['Image'].lower() else ('CalMag' if 'calmag' in row['Image'].lower() else np.NaN)), axis=1)
+    df['Treatment'] = df.apply(get_treatment, axis=1)
 
     # drop rows with unknown treatment (for now)
     df.dropna(how='any', inplace=True)

@@ -89,3 +89,12 @@ def color_analysis(image, i, k=10):
         counts[hex] = len(np.nonzero(ex_reduced)[0])
 
     return counts, ex_reduced if ex_reduced is not None else np.zeros_like(reduced)
+
+
+def get_treatment(row):
+    image_name = row['Image'].lower()
+    if 'control' in image_name: return 'Control'
+    elif 'maxsea' in image_name: return 'MaxSea'
+    elif 'calmag' in image_name: return 'CalMag'
+    elif '10_30_20' in image_name: return 'BloomBoost'
+    else: return np.NaN
