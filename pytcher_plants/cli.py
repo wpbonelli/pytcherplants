@@ -1,20 +1,18 @@
+import csv
 from glob import glob
+from heapq import nlargest
 from os.path import join
 from pathlib import Path
-
-import cv2
-import click
-import pandas as pd
-import matplotlib as mpl
-from matplotlib import pyplot as plt
-import numpy as np
-from heapq import nlargest
 from pprint import pprint
-import seaborn as sns
-import csv
 
-from pytcher_plants.color import rgb_analysis, hsv_analysis
-from pytcher_plants.utils import row_to_hsv, color_analysis, hex2rgb, get_treatment
+import click
+import cv2
+import matplotlib as mpl
+import numpy as np
+import pandas as pd
+
+from pytcher_plants.color import rgb_analysis, hsv_analysis, color_analysis
+from pytcher_plants.utils import row_to_hsv, hex2rgb, get_treatment
 
 mpl.rcParams['figure.dpi'] = 300
 
@@ -29,14 +27,11 @@ def analyze_file(file, output_directory, base_name, count: int = None, min_area:
     :param count: The number of plants in the image (automatically detected if not provided)
     """
 
+    # load image and apply blur
     image = cv2.imread(file)
-    # rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-    # apply blur
     blur = cv2.blur(image, (25, 25))
     gblur = cv2.GaussianBlur(blur, (11, 75), cv2.BORDER_DEFAULT)
     # cv2.imwrite(f"{join(output_directory, base_name + '.blurred.png')}", gblur)
-    # sys.exit(1)
 
     # apply color mask
     lower_blue = np.array([0, 70, 40])
@@ -47,7 +42,6 @@ def analyze_file(file, output_directory, base_name, count: int = None, min_area:
     dilated = cv2.dilate(opened, np.ones((5, 5)))
     masked = cv2.bitwise_and(image, image, mask=dilated)
     # cv2.imwrite(f"{join(output_directory, base_name + '.masked.png')}", masked)
-    # sys.exit(1)
 
     # find and crop to contours
     ctrs = masked.copy()
@@ -68,19 +62,24 @@ def analyze_file(file, output_directory, base_name, count: int = None, min_area:
         print(f"Plant {i} cropped")
         cv2.rectangle(ctrs, (x, y), (x + w, y + h), (36, 255, 12), 3)
         cv2.putText(ctrs, f"Plant {i}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (36, 255, 12), 3)
-    cv2.imwrite(join(output_directory, base_name + '.contours.png'), ctrs)
+    cv2.imwrite(join(output_directory, base_name + '.plants.png'), ctrs)
 
-    # color analysis
+    # color averaging/analysis
     freqs = []
     densities = []
     csv_path = join(output_directory, base_name + '.colors.csv')
+    cropped_averaged = []
     with open(csv_path, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'Freq'])
 
         for i, crp in enumerate(cropped):
-            cluster_freqs, ex_reduced = color_analysis(cv2.cvtColor(crp.copy(), cv2.COLOR_BGR2RGB), i)
-            # cv2.imwrite(f"{join(output_directory, base_name + '.exreduced.png')}", ex_reduced)
+            cpy = crp.copy()
+            rgb = cv2.cvtColor(cpy, cv2.COLOR_BGR2RGB)
+            cv2.imwrite(f"{join(output_directory, base_name + '.' + str(i) + '.png')}", cpy)
+            cluster_freqs, averaged = color_analysis(rgb, i)
+            cropped_averaged.append(averaged)
+            cv2.imwrite(f"{join(output_directory, base_name + '.' + str(i) + '.averaged.png')}", cv2.cvtColor(averaged, cv2.COLOR_RGB2BGR))
             freqs.append(cluster_freqs)
             print(f"Image {base_name} plant {i} color cluster pixel frequencies:")
             pprint(cluster_freqs)
@@ -93,40 +92,6 @@ def analyze_file(file, output_directory, base_name, count: int = None, min_area:
             densities.append(cluster_densities)
             print(f"Image {base_name} plant {i} color cluster pixel densities:")
             pprint(cluster_densities)
-
-    for i, f in enumerate(freqs):
-        x = list(f.keys())
-        y = f.values()
-        hp = sns.histplot(x=x, weights=y, hue=x, palette=x, discrete=True)
-        plt.xticks(rotation=60)
-        plt.legend().remove()
-        plt.title(f"Image {base_name} plant {i} color cluster pixel frequencies")
-        plt.savefig(join(output_directory, base_name + 'plant' + str(i) + '.avg.freq.png'))
-        plt.clf()
-
-    for i, plant in enumerate(freqs):
-        freqs_rgb = [(hex2rgb(k), v) for k, v in plant.items()]
-
-        xs = []
-        ys = []
-        zs = []
-        ss = []
-        total = sum([f[1] for f in freqs_rgb])
-
-        for f in freqs_rgb:
-            xs.append(f[0][0])
-            ys.append(f[0][1])
-            zs.append(f[0][2])
-            ss.append((f[1] / total) * 10000)
-
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-        ax.scatter(xs, ys, zs, s=ss, c=list(zip(xs, ys, zs)))
-        plt.xlabel("R")
-        plt.ylabel("G")
-        ax.set_zlabel("B")
-        plt.savefig(join(output_directory, base_name + 'plant' + str(i) + '.avg.rgb.png'))
-        plt.clf()
 
 
 def analyze_results(input_directory, output_directory):
@@ -141,6 +106,7 @@ def analyze_results(input_directory, output_directory):
     images = glob(join(input_directory, '*.JPG')) + glob(join(input_directory, '*.jpg'))
     print("Input images:", len(images))
 
+    # list all the result CSVs for each image file (produced by CLI process command)
     results = glob(join(output_directory, '*.CSV')) + glob(join(output_directory, '*.csv'))
     print("Result files:", len(results))
 
@@ -174,9 +140,8 @@ def analyze_results(input_directory, output_directory):
         subset = df[df['Treatment'] == treatment]
         print(treatment + ":", len(subset))
 
-        # hue analysis
-        rgb_analysis(treatment, output_directory, subset)
-        hsv_analysis(treatment, output_directory, subset)
+        rgb_analysis(subset, treatment, output_directory)
+        hsv_analysis(subset, treatment, output_directory)
 
 
 @click.group()
@@ -191,18 +156,8 @@ def cli():
 @click.option('--count', '-c', required=False, type=int, default=6)
 @click.option('--min_area', '-m', required=False, type=int)
 def process(input_directory, output_directory, filetypes, count, min_area):
-    # ap = argparse.ArgumentParser()
-    # ap.add_argument("-i", "--input", required=True, help="Input path")
-    # ap.add_argument("-o", "--output", required=True, help="Output path")
-    # ap.add_argument("-ft", "--filetypes", required=False, default='png,jpg', help="Image filetypes")
-    # ap.add_argument("-c", "--count", required=False, default=6, help="Number of individuals")
 
-    # args = vars(ap.parse_args())
-    # input_directory = args['input']
-    # output_directory = args['output']
-    # extensions = args['filetypes'].split(',') if 'filetypes' in args else []
-    # count = int(args['count'])
-
+    # by default, support PNGs and JPGs
     if len(filetypes) == 0: filetypes = ['png', 'jpg']
     extensions = filetypes
     extensions = [e for es in [[extension.lower(), extension.upper()] for extension in extensions] for e in es]
@@ -214,7 +169,7 @@ def process(input_directory, output_directory, filetypes, count, min_area):
             print(f"Processing image {file}")
             analyze_file(file, output_directory, Path(file).stem, count, min_area)
 
-        # TODO: kmeans function doesn't seem to be threadsafe
+        # TODO: kmeans function doesn't seem to be thread-safe
         #  (running it on multiple cores in parallel causes all but 1 to fail)
         #  ...reinstate if workaround found
         #
