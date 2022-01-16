@@ -1,4 +1,6 @@
-This repository is for Mason McNair's pitcher plant project, involving geometric trait and color analysis from top-down images.
+# pytcher-plants
+
+Python/OpenCV geometric trait and color analysis for top-down images of pitcher plants.
 
 ![Optional Text](cropped_averaged.png)
 
@@ -20,15 +22,17 @@ This repository is for Mason McNair's pitcher plant project, involving geometric
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-Code adapted by Wes Bonelli from Suxing Liu's [SMART](https://github.com/Computational-Plant-Science/SMART) pipeline for arabidopsis rosette image analysis.
+Developed for a fertilization experiment performed by Mason McNair at the University of Georgia. Segmentation and analysis adapted from [SMART](https://github.com/Computational-Plant-Science/SMART) (Speedy Measurement of Arabidopsis Rosette Traits) by Suxing Liu, also at UGA.
 
 ## Project layout
 
-Python scripts for analyzing several images at once are located in `scripts`, Jupyter notebooks detailing preprocessing and analysis methods are in `notebooks`, and a few test images from the larger dataset are included in `testdata`.
+Jupyter notebooks detailing methods are in `notebooks`. A few test photos are included in `testdata`. A Python CLI exposing commands for image analysis and postprocessing/aggregations is provided in `scripts`. <!--A `Snakefile` is also provided, encapsulating a Snakemake pipeline which invokes the Python CLI to process individual images in parallel before computing aggregate statistics.-->
 
-## General approach
+## Approach
 
-Briefly, each image is preprocessed to detect and mask individual pots, then the color distribution within each pot is analyzed via k-means with k = 10. The top k colors and corresponding pixel frequencies/probability mass are calculated.
+First each image is preprocessed individually to detect and segment pots and pitchers. The number of pots per image can be provided on the command line or automatically inferred. A series of preprocessing steps are applied including Gaussian blur and an adaptive threshold to, followed by segmentation via contour detection and a hue filter. Once individual pots and the plants within have been distinguished, each is cropped for individual analysis. K-means clustering is used to quantize the image of each plant in RGB-space, assigning to each pixel a centroid value corresponding to the nearest color cluster. This yields a reduced image with $k$ distinct colors. Pixels are then counted and frequencies recorded, grouped by plant, timestamp, and fertilizer treatment.
+
+Next are several steps to analyze color and basic geometric traits over the entire image set and duration of the experiment. At each time point, k-means clustering is applied to the RGB distribution corresponding to each treatment. Pixels are also binned according to hue. This permits questions like: "Is red pitcher tissue (presumably indicating health/vigor) more prevalent under any of the fertilizer treatments?"
 
 ## Setting up a development environment
 
@@ -44,7 +48,7 @@ Python3.6+ with the packages in `requirements.txt`. A few options for setting up
 
 ### Installing dependencies
 
-Anaconda or Python3's built-in venv utility can be used to create a virtual environment. Alternatively the `computationalplantscience/smart` Docker image can be used.
+Anaconda or Python3's built-in venv utility can be used to create a virtual environment. Alternatively there is an image available on Docker Hub: `wbonelli/pytcher-plants`.
 
 #### venv
 
@@ -68,7 +72,7 @@ There is a preconfigured Docker image available on the Docker Hub at `wbonelli/p
 docker run -it -p 8888:8888 -v $(pwd):/opt/dev -w /opt/dev wbonelli/pytcher-plants bash
 ```
 
-This will mount the project root into the working directory inside the container. It also opens port 8888 in case you want to use Jupyter.
+This will pull the image definition (if you don't already have it) and start a container, mounting the project root into the container's working directory. It also opens port 8888 in case you want to use Jupyter.
 
 ### Running the code
 
@@ -80,7 +84,7 @@ This will serve the project at `localhost:8888`. Then navigate to the `notebooks
 
 #### Python CLI
 
-The Python CLI can be invoked with `pytcher_plants/cli.py`. This script includes commands for processing one more image files (in parallel, if the host has multiple cores available) as well as post-processing/aggregations after images are analyzed.
+The Python CLI can be invoked with `pytcher_plants/cli.py`. This script includes commands for processing one more image files as well as post-processing/aggregations after images are analyzed.
 
 ##### Processing (image analysis)
 
