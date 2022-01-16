@@ -20,10 +20,19 @@ def rgb2hex(color):
     return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
 
 
-def hex_to_hue_range(color: str) -> Tuple[int, int]:
+def hex_to_hue_range(color: str, radius: int = 3) -> Tuple[int, int]:
+    """
+    Converts a hexadecimal color code to a hue range (interval of +/- radius around corresponding hue)
+
+    :param color: The hex color code
+    :param radius: The amount to pad the interval around the hue
+    :return: The hue range
+    """
+
     r, g, b = hex2rgb(color)
-    h, s, v = rgb_to_hsv(r, g, b)
-    return h - 1, h + 1
+    h, _, _ = rgb_to_hsv(r, g, b)
+    h = int(h * 179)
+    return h - radius, h + radius
 
 
 def hue_to_rgb(hue):

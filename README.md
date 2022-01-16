@@ -109,7 +109,17 @@ You can also specify the number of plants per image by providing an integer `--c
 
 ##### Post-processing (aggregations)
 
+After processing all image files individually, the `postprocess` command can be used on the files produced by the `process` command to compute color distributions and geometric traits.
+
 ```shell
 python3 pytcher_plants/cli.py postprocess -i <input file or directory> -o <output directory>
+```
+
+##### Detecting growth point labels
+
+A command is also provided to detect manually labeled growth points, find their coordinates, and write them to CSV for ingestion into a [heatmap-based counting dataset for use with a model trained with Deep Plant Phenomics](https://deep-plant-phenomics.readthedocs.io/en/latest/Loaders/#load-heatmap-based-counting-dataset-from-directory). For instance, the following will produce the `labels.csv` file included in `data/labels/growth_points`, run on the images included in that folder:
+
+```shell
+python3 pytcher_plants/cli.py train gpoints -i <input file or directory> -o <output directory> -c '#ea57f5'
 ```
 

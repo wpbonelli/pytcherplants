@@ -4,7 +4,6 @@ from heapq import nlargest
 from os.path import join
 from pathlib import Path
 from pprint import pprint
-from typing import Tuple, List
 
 import click
 import cv2
@@ -13,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from pytcher_plants.color import rgb_analysis, hsv_analysis, color_analysis
+from pytcher_plants.growth_points import detect_growth_point_labels, growth_point_labels_to_csv_format
 from pytcher_plants.utils import row_to_hsv, hex2rgb, get_treatment, hex_to_hue_range
 
 mpl.rcParams['figure.dpi'] = 300
@@ -145,22 +145,13 @@ def analyze_results(input_directory, output_directory):
         hsv_analysis(subset, treatment, output_directory)
 
 
-def detect_growth_point_labels(file, color: Tuple[int, int]) -> List[int]:
-    image = cv2.imread(file)
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, (color[0], 0, 0), (color[1], 255, 255))
-    target = cv2.bitwise_and(image, image, mask=mask)
-    # TODO: test the segmentation, then locate nonzero regions, find centroids of each, return as array
-    return []
-
-
 @click.group()
-def train():
+def cli():
     pass
 
 
-@click.group()
-def cli():
+@cli.group()
+def train():
     pass
 
 
@@ -211,8 +202,8 @@ def postprocess(input_directory, output_directory):
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--color', '-c', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
-def detect_growth_point_labels(input, output, color, filetypes):
-    # convert hex color code to hue range
+def gpoints(input, output, color, filetypes):
+    color = color if str(color).startswith('#') else f"#{color}"
     hue_lo, hue_hi = hex_to_hue_range(color)
 
     rows = []
@@ -224,12 +215,17 @@ def detect_growth_point_labels(input, output, color, filetypes):
         files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
 
         for file in files:
-            print(f"Detecting growth point labels in image {file}")
-            rows.append([file] + detect_growth_point_labels(file, (hue_lo, hue_hi)))
+            stem = Path(file).stem
+            print(f"Detecting growth point labels with color {color} (hue range {hue_lo}-{hue_hi}) in image {stem}")
+            image = cv2.imread(file)
+            labels = detect_growth_point_labels(image, (hue_lo, hue_hi))
+            rows.append([stem] + growth_point_labels_to_csv_format(labels))
     else:
         stem = Path(input).stem
         print(f"Detecting growth point labels in image {stem}")
-        rows.append([stem] + detect_growth_point_labels(input, (hue_lo, hue_hi)))
+        image = cv2.imread(input)
+        labels = detect_growth_point_labels(image, (hue_lo, hue_hi))
+        rows.append([stem] + growth_point_labels_to_csv_format(labels))
 
     csv_path = join(output, 'labels.csv')
     with open(csv_path, 'w') as csv_file:
