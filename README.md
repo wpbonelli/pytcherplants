@@ -2,7 +2,9 @@
 
 Python/OpenCV geometric trait and color analysis for top-down images of pitcher plants.
 
-![Optional Text](cropped_averaged.png)
+Contour Detection             |  Color Analysis | Pitcher Analysis
+:-------------------------:|:-------------------------:|:-----:|
+![](media/cont.png)  |  ![](media/hist.png) ![](media/rgb.png)  | TODO
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -24,7 +26,7 @@ Python/OpenCV geometric trait and color analysis for top-down images of pitcher 
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-Developed for a fertilization experiment performed by [Mason McNair](https://github.com/mmcnair91) at the University of Georgia. Segmentation and analysis adapted from [SMART](https://github.com/Computational-Plant-Science/SMART) (Speedy Measurement of Arabidopsis Rosette Traits) by [Suxing Liu](https://github.com/lsx1980), also at UGA.
+Developed for images obtained from a fertilization experiment performed by [Mason McNair](https://github.com/mmcnair91) at the University of Georgia. Segmentation and analysis adapted from [SMART](https://github.com/Computational-Plant-Science/SMART) (Speedy Measurement of Arabidopsis Rosette Traits) by [Suxing Liu](https://github.com/lsx1980), also at UGA.
 
 ## Project layout
 
