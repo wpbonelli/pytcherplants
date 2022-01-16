@@ -9,7 +9,7 @@ Python/OpenCV geometric trait and color analysis for top-down images of pitcher 
 
 
 - [Project layout](#project-layout)
-- [General approach](#general-approach)
+- [Approach](#approach)
 - [Setting up a development environment](#setting-up-a-development-environment)
   - [Requirements](#requirements)
   - [Installing dependencies](#installing-dependencies)
@@ -18,11 +18,13 @@ Python/OpenCV geometric trait and color analysis for top-down images of pitcher 
     - [Docker](#docker)
   - [Running the code](#running-the-code)
     - [Jupyter notebooks](#jupyter-notebooks)
-    - [Python scripts](#python-scripts)
+    - [Python CLI](#python-cli)
+      - [Processing (image analysis)](#processing-image-analysis)
+      - [Post-processing (aggregations)](#post-processing-aggregations)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-Developed for a fertilization experiment performed by Mason McNair at the University of Georgia. Segmentation and analysis adapted from [SMART](https://github.com/Computational-Plant-Science/SMART) (Speedy Measurement of Arabidopsis Rosette Traits) by Suxing Liu, also at UGA.
+Developed for a fertilization experiment performed by [Mason McNair](https://github.com/mmcnair91) at the University of Georgia. Segmentation and analysis adapted from [SMART](https://github.com/Computational-Plant-Science/SMART) (Speedy Measurement of Arabidopsis Rosette Traits) by [Suxing Liu](https://github.com/lsx1980), also at UGA.
 
 ## Project layout
 
