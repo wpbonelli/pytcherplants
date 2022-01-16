@@ -4,6 +4,7 @@ from heapq import nlargest
 from os.path import join
 from pathlib import Path
 from pprint import pprint
+from typing import Tuple, List
 
 import click
 import cv2
@@ -12,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from pytcher_plants.color import rgb_analysis, hsv_analysis, color_analysis
-from pytcher_plants.utils import row_to_hsv, hex2rgb, get_treatment
+from pytcher_plants.utils import row_to_hsv, hex2rgb, get_treatment, hex_to_hue_range
 
 mpl.rcParams['figure.dpi'] = 300
 
@@ -144,30 +145,44 @@ def analyze_results(input_directory, output_directory):
         hsv_analysis(subset, treatment, output_directory)
 
 
+def detect_growth_point_labels(file, color: Tuple[int, int]) -> List[int]:
+    image = cv2.imread(file)
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, (color[0], 0, 0), (color[1], 255, 255))
+    target = cv2.bitwise_and(image, image, mask=mask)
+    # TODO: test the segmentation, then locate nonzero regions, find centroids of each, return as array
+    return []
+
+
+@click.group()
+def train():
+    pass
+
+
 @click.group()
 def cli():
     pass
 
 
 @cli.command()
-@click.option('--input_directory', '-i', required=True, type=str)
-@click.option('--output_directory', '-o', required=True, type=str)
+@click.option('--input', '-i', required=True, type=str)
+@click.option('--output', '-o', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
 @click.option('--count', '-c', required=False, type=int, default=6)
 @click.option('--min_area', '-m', required=False, type=int)
-def process(input_directory, output_directory, filetypes, count, min_area):
+def process(input, output, filetypes, count, min_area):
 
     # by default, support PNGs and JPGs
     if len(filetypes) == 0: filetypes = ['png', 'jpg']
     extensions = filetypes
     extensions = [e for es in [[extension.lower(), extension.upper()] for extension in extensions] for e in es]
-    patterns = [join(input_directory, f"*.{p}") for p in extensions]
+    patterns = [join(input, f"*.{p}") for p in extensions]
     files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
 
-    if Path(input_directory).is_dir():
+    if Path(input).is_dir():
         for file in files:
             print(f"Processing image {file}")
-            analyze_file(file, output_directory, Path(file).stem, count, min_area)
+            analyze_file(file, output, Path(file).stem, count, min_area)
 
         # TODO: kmeans function doesn't seem to be thread-safe
         #  (running it on multiple cores in parallel causes all but 1 to fail)
@@ -181,7 +196,7 @@ def process(input_directory, output_directory, filetypes, count, min_area):
         #     pool.terminate()
     else:
         print(f"Processing image {input}")
-        analyze_file(input, output_directory, Path(input_directory).stem, count, min_area)
+        analyze_file(input, output, Path(input).stem, count, min_area)
 
 
 @cli.command()
@@ -189,6 +204,37 @@ def process(input_directory, output_directory, filetypes, count, min_area):
 @click.option('--output_directory', '-o', required=True, type=str)
 def postprocess(input_directory, output_directory):
     analyze_results(input_directory, output_directory)
+
+
+@train.command()
+@click.option('--input', '-i', required=True, type=str)
+@click.option('--output', '-o', required=True, type=str)
+@click.option('--color', '-c', required=True, type=str)
+@click.option('--filetypes', '-p', multiple=True, type=str)
+def detect_growth_point_labels(input, output, color, filetypes):
+    # convert hex color code to hue range
+    hue_lo, hue_hi = hex_to_hue_range(color)
+
+    rows = []
+    if Path(input).is_dir():
+        if len(filetypes) == 0: filetypes = ['png', 'jpg']
+        extensions = filetypes
+        extensions = [e for es in [[extension.lower(), extension.upper()] for extension in extensions] for e in es]
+        patterns = [join(input, f"*.{p}") for p in extensions]
+        files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
+
+        for file in files:
+            print(f"Detecting growth point labels in image {file}")
+            rows.append([file] + detect_growth_point_labels(file, (hue_lo, hue_hi)))
+    else:
+        stem = Path(input).stem
+        print(f"Detecting growth point labels in image {stem}")
+        rows.append([stem] + detect_growth_point_labels(input, (hue_lo, hue_hi)))
+
+    csv_path = join(output, 'labels.csv')
+    with open(csv_path, 'w') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for row in rows: writer.writerow(row)
 
 
 if __name__ == '__main__':

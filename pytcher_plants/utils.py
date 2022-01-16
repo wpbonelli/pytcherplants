@@ -1,4 +1,5 @@
 from colorsys import hsv_to_rgb, rgb_to_hsv
+from typing import Tuple
 
 import matplotlib as mpl
 import numpy as np
@@ -17,6 +18,12 @@ def hex2rgb(color):
 
 def rgb2hex(color):
     return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
+
+
+def hex_to_hue_range(color: str) -> Tuple[int, int]:
+    r, g, b = hex2rgb(color)
+    h, s, v = rgb_to_hsv(r, g, b)
+    return h - 1, h + 1
 
 
 def hue_to_rgb(hue):

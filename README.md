@@ -30,9 +30,16 @@ Developed for images obtained from a fertilization experiment performed by [Maso
 
 ## Project layout
 
-Jupyter notebooks detailing methods are in `notebooks`. A few test photos are included in `testdata`. A Python CLI exposing commands for image analysis and postprocessing/aggregations is provided in `scripts`. <!--A `Snakefile` is also provided, encapsulating a Snakemake pipeline which invokes the Python CLI to process individual images in parallel before computing aggregate statistics.-->
+Jupyter notebooks detailing methods are in `notebooks`. A few test photos are included in `data`. A Python CLI exposing commands for image analysis and postprocessing/aggregations is provided in `scripts`. <!--A `Snakefile` is also provided, encapsulating a Snakemake pipeline which invokes the Python CLI to process individual images in parallel before computing aggregate statistics.-->
 
 ## Approach
+
+This pipeline focuses on several phenotypic areas of interest:
+
+- color distribution (RGB and hue)
+- growth point estimation/counting
+- pitcher semantic segmentation/counting
+- geometric traits (total area, area per pitcher)
 
 First each image is preprocessed individually to detect and segment pots and pitchers. The number of pots per image can be provided on the command line or automatically inferred. A series of preprocessing steps are applied including Gaussian blur and an adaptive threshold, followed by segmentation via contour detection and a hue filter. Once individual pots and the plants within have been distinguished, each is cropped for individual analysis. K-means clustering is used to quantize each plant in RGB-space, assigning to each pixel a centroid value corresponding to the nearest color cluster. This yields a reduced image with k distinct colors. Pixels are then counted and frequencies recorded, grouped by plant, timestamp, and fertilizer treatment.
 
