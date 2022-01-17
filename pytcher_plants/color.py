@@ -32,7 +32,7 @@ def rgb_analysis(data: pd.DataFrame, treatment: str, output_directory: str = '.'
     plt.legend().remove()
     plt.title(f"{treatment} color distribution")
     plt.savefig(join(output_directory, f"{treatment}.k{k}.dist.png"))
-    plt.show()
+    # plt.show()
     plt.clf()
 
     fig = go.Figure()
@@ -44,7 +44,7 @@ def rgb_analysis(data: pd.DataFrame, treatment: str, output_directory: str = '.'
     trace = dict(type='scatter3d', x=r, y=g, z=b, mode='markers', marker=dict(color=colors_map, size=sizes_map))
     fig.add_trace(trace)
     fig.update_layout(title=treatment, scene=dict(xaxis_title='G', yaxis_title='R', zaxis_title='B'))
-    fig.show()
+    # fig.show()
     fig.write_image(join(output_directory, treatment + '.rgb.3d.png'))
 
 
@@ -56,7 +56,7 @@ def hsv_analysis(data: pd.DataFrame, treatment: str, output_directory: str):
     # format HSV columns, convert to [1, 360] range, create hue bands
     subset_hsv = data[['H', 'S', 'V']].astype(float)
     subset_hsv['HH'] = subset_hsv.apply(lambda row: int(float(row['H']) * 360), axis=1)
-    subset_hsv['Band'] = subset_hsv.aply(lambda row: int(row['HH']) - (int(row['HH']) % divisor), axis=1)
+    subset_hsv['Band'] = subset_hsv.apply(lambda row: int(row['HH']) - (int(row['HH']) % divisor), axis=1)
 
     # count clusters per band
     counts = Counter(subset_hsv['Band'])
@@ -79,7 +79,7 @@ def hsv_analysis(data: pd.DataFrame, treatment: str, output_directory: str):
         color_discrete_map={str(k): hue_to_rgb_formatted(k) for k in counts.keys()},
         labels=None)
     fig.update_layout(showlegend=False, polar_angularaxis_tickfont_size=7, polar_radialaxis_tickfont_size=7)
-    fig.show()
+    # fig.show()
     fig.write_image(join(output_directory, treatment + '.hue.radial.png'))
 
 

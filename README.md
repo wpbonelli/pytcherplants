@@ -2,13 +2,12 @@
 
 Python/OpenCV geometric trait and color analysis for top-down images of pitcher plants.
 
-Contour Detection             |  Color Analysis | Pitcher Analysis
-:-------------------------:|:-------------------------:|:-----:|
-![](media/cont.png)  |  ![](media/hist.png) ![](media/rgb.png)  | TODO
+Contour Detection             |            Color Analysis             | Growth Point Estimation |  Pitcher Segmentation & Traits | 
+:----------------------------:|:-------------------------------------:|:-----------------------:|:------------------------------:|
+![](media/cont.png)  | ![](media/rad.png) ![](media/rgb.png) |    ![](media/gp.jpg)    | TODO
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
 
 - [Project layout](#project-layout)
 - [Approach](#approach)
@@ -23,6 +22,7 @@ Contour Detection             |  Color Analysis | Pitcher Analysis
     - [Python CLI](#python-cli)
       - [Processing (image analysis)](#processing-image-analysis)
       - [Post-processing (aggregations)](#post-processing-aggregations)
+      - [Detecting growth point labels](#detecting-growth-point-labels)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -34,16 +34,41 @@ Jupyter notebooks detailing methods are in `notebooks`. A few test photos are in
 
 ## Approach
 
-This pipeline focuses on several phenotypic areas of interest:
+This pipeline focuses on a few areas of interest:
 
-- color distribution (RGB and hue)
-- growth point estimation/counting
-- pitcher semantic segmentation/counting
-- geometric traits (total area, area per pitcher)
+- color distribution analysis (RGB and hue)
+- growth point counting via density estimation
+- pitcher counting, semantic segmentation, & traits
 
-First each image is preprocessed individually to detect and segment pots and pitchers. The number of pots per image can be provided on the command line or automatically inferred. A series of preprocessing steps are applied including Gaussian blur and an adaptive threshold, followed by segmentation via contour detection and a hue filter. Once individual pots and the plants within have been distinguished, each is cropped for individual analysis. K-means clustering is used to quantize each plant in RGB-space, assigning to each pixel a centroid value corresponding to the nearest color cluster. This yields a reduced image with k distinct colors. Pixels are then counted and frequencies recorded, grouped by plant, timestamp, and fertilizer treatment.
+### Color analysis
 
-Next are several steps to analyze color distribution and pitcher counts/measurements over the entire image set and duration of the experiment. At each time point, k-means clustering is applied to the RGB distribution corresponding to each treatment. Pixels are also binned according to hue. This permits questions like: "Is red pitcher tissue (presumably indicating health/vigor) more prevalent under any of the fertilizer treatments?" TODO: count pitchers, average/total area
+First each image is preprocessed and pots are segmented. The number of pots per image can be provided on the command line, otherwise it is automatically inferred. A series of preprocessing steps are first applied including Gaussian blur and an adaptive threshold, followed by contour detection and a hue filter. Once individual pots and the plants within have been distinguished, each is cropped for individual analysis. K-means clustering is used to assign each pixel to a centroid in RGB-space (corresponding to the nearest color cluster). This yields a reduced image with k distinct colors. Pixels are counted and frequencies recorded, grouped by plant, timestamp, and fertilizer treatment. Next, another round of k-means clustering is applied separately to the (RGB) pixel distribution corresponding to each treatment. Pixels are also binned according to hue.
+
+### Growth points
+
+Several methods are compared for estimating growth point locations, including:
+
+- convex hull centroid
+- skeletonization, root node estimation
+- density estimation via convolutional neural net
+
+Growth points are useful in turn for estimating average pitcher length per plant/pot, even in the absence of semantic pitcher segmentation: the average distance from growth point to convex hull boundary doesn't seem an unreasonable proxy.
+
+#### Centroid of convex hull
+
+A convex hull is computed around the plant after background and pot pixels have been removed, then its centroid is interpreted as the likeliest growth location on the assumption that pitcher length tends toward a uniform distribution. With this method we also assume each pot has just 1 growth point.
+
+#### Root node of skeletonized graph
+
+A binary skeletonization is obtained for each plant after background and pot pixels are removed, then an estimate of its graph structure is extracted and we attempt to determine the root node's location.
+
+#### CNN density estimation: heatmap object counting
+
+A convolutional neural net, modeled on the Deep Plant Phenomics project's example, is used here for density estimation. This produces a 2-dimensional Gaussian distribution over the cropped image of each pot: a heatmap showing locations the model considers the likeliest growth points.
+
+### Pitcher segmentation & traits
+
+TODO
 
 ## Setting up a development environment
 
