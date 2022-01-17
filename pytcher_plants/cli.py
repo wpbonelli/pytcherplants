@@ -94,6 +94,8 @@ def analyze_file(file, output_directory, base_name, count: int = None, min_area:
             print(f"Image {base_name} plant {i} color cluster pixel densities:")
             pprint(cluster_densities)
 
+            # TODO use skimage for skeletonization and skan for analysis?
+
 
 def analyze_results(input_directory, output_directory):
     """
