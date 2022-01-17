@@ -1,150 +1,17 @@
-import csv
 from glob import glob
-from heapq import nlargest
 from os.path import join
 from pathlib import Path
-from pprint import pprint
 
 import click
-import cv2
 import matplotlib as mpl
-import numpy as np
-import pandas as pd
+import deepplantphenomics as dpp
 
-from pytcher_plants.color import rgb_analysis, hsv_analysis, color_analysis
+from pytcher_plants.color import color_analysis
 from pytcher_plants.growth_points import detect_growth_point_labels, growth_point_labels_to_csv_format
-from pytcher_plants.utils import row_to_hsv, hex2rgb, get_treatment, hex_to_hue_range
+from pytcher_plants.preprocess import preprocess_file
+from pytcher_plants.utils import hex_to_hue_range
 
 mpl.rcParams['figure.dpi'] = 300
-
-
-def analyze_file(file, output_directory, base_name, count: int = None, min_area: int = None):
-    """
-    Analyze a single image file.
-
-    :param file: The image file
-    :param output_directory: The output directory
-    :param base_name: The file's basename (without extension)
-    :param count: The number of plants in the image (automatically detected if not provided)
-    """
-
-    # load image and apply blur
-    image = cv2.imread(file)
-    blur = cv2.blur(image, (25, 25))
-    gblur = cv2.GaussianBlur(blur, (11, 75), cv2.BORDER_DEFAULT)
-    # cv2.imwrite(f"{join(output_directory, base_name + '.blurred.png')}", gblur)
-
-    # apply color mask
-    lower_blue = np.array([0, 70, 40])
-    upper_blue = np.array([179, 255, 255])
-    hsv = cv2.cvtColor(gblur, cv2.COLOR_RGB2HSV)
-    mask = cv2.inRange(hsv, lower_blue, upper_blue)
-    opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-    dilated = cv2.dilate(opened, np.ones((5, 5)))
-    masked = cv2.bitwise_and(image, image, mask=dilated)
-    # cv2.imwrite(f"{join(output_directory, base_name + '.masked.png')}", masked)
-
-    # find and crop to contours
-    ctrs = masked.copy()
-    _, thresh = cv2.threshold(mask, 40, 255, 0)
-    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(ctrs, contours, -1, 255, 3)
-    keep = count if count is not None and count > 0 else 100  # what is a suitable maximum?
-    divisor = 8
-    min_area = min_area if min_area is not None and min_area > 0 else ((image.shape[0] / divisor) * (image.shape[1] / divisor))
-    print(f"Keeping top {keep} contours with area > {min_area}...")
-    largest = [c for c in nlargest(keep, contours, key=cv2.contourArea) if cv2.contourArea(c) > min_area]
-    print(f"Kept {len(largest)} contours")
-    cropped = []
-    for i, c in enumerate(largest):
-        x, y, w, h = cv2.boundingRect(c)
-        ctr = masked.copy()
-        cropped.append(ctr[y:y + h, x:x + w])
-        print(f"Plant {i} cropped")
-        cv2.rectangle(ctrs, (x, y), (x + w, y + h), (36, 255, 12), 3)
-        cv2.putText(ctrs, f"Plant {i}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (36, 255, 12), 3)
-    cv2.imwrite(join(output_directory, base_name + '.plants.png'), ctrs)
-
-    # color averaging/analysis
-    freqs = []
-    densities = []
-    csv_path = join(output_directory, base_name + '.colors.csv')
-    cropped_averaged = []
-    with open(csv_path, 'w') as csv_file:
-        writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'Freq'])
-
-        for i, crp in enumerate(cropped):
-            cpy = crp.copy()
-            rgb = cv2.cvtColor(cpy, cv2.COLOR_BGR2RGB)
-            cv2.imwrite(f"{join(output_directory, base_name + '.' + str(i) + '.png')}", cpy)
-            cluster_freqs, averaged = color_analysis(rgb, i)
-            cropped_averaged.append(averaged)
-            cv2.imwrite(f"{join(output_directory, base_name + '.' + str(i) + '.averaged.png')}", cv2.cvtColor(averaged, cv2.COLOR_RGB2BGR))
-            freqs.append(cluster_freqs)
-            print(f"Image {base_name} plant {i} color cluster pixel frequencies:")
-            pprint(cluster_freqs)
-            for h, f in cluster_freqs.items():
-                rgb = hex2rgb(h)
-                writer.writerow([base_name, str(i), h, rgb[0], rgb[1], rgb[2], f])
-
-            total = sum(cluster_freqs.values())
-            cluster_densities = {k: (v / total) for k, v in cluster_freqs.items()}
-            densities.append(cluster_densities)
-            print(f"Image {base_name} plant {i} color cluster pixel densities:")
-            pprint(cluster_densities)
-
-            # TODO use skimage for skeletonization and skan for analysis?
-
-
-def analyze_results(input_directory, output_directory):
-    """
-    Post-processing and aggregations, meant to run after images are processed.
-
-    :param input_directory: the directory containing input images
-    :param output_directory: the directory containing result files
-    :return:
-    """
-
-    images = glob(join(input_directory, '*.JPG')) + glob(join(input_directory, '*.jpg'))
-    print("Input images:", len(images))
-
-    # list all the result CSVs for each image file (produced by CLI process command)
-    results = glob(join(output_directory, '*.CSV')) + glob(join(output_directory, '*.csv'))
-    print("Result files:", len(results))
-
-    headers = []
-    rows = []
-    for result in results:
-        with open(result, 'r') as file:
-            reader = csv.reader(file)
-            if len(headers) == 0:
-                headers = next(reader, None)
-            else:
-                next(reader, None)
-            for row in reader: rows.append(row)
-
-    # create dataframe from rows
-    df = pd.DataFrame(rows, columns=headers)
-
-    # extract treatment from image name
-    df['Treatment'] = df.apply(get_treatment, axis=1)
-
-    # drop rows with unknown treatment (for now)
-    df.dropna(how='any', inplace=True)
-
-    # add columns for HSV color representation
-    df['H'], df['S'], df['V'] = zip(*df.apply(lambda row: row_to_hsv(row), axis=1))
-
-    # color analysis for each treatment separately
-    treatments = list(np.unique(df['Treatment']))
-    for treatment in treatments:
-        # get subset corresponding to this treatment
-        subset = df[df['Treatment'] == treatment]
-        print(treatment + ":", len(subset))
-
-        rgb_analysis(subset, treatment, output_directory)
-        hsv_analysis(subset, treatment, output_directory)
 
 
 @click.group()
@@ -153,7 +20,17 @@ def cli():
 
 
 @cli.group()
-def train():
+def colors():
+    pass
+
+
+@cli.group()
+def gpoints():
+    pass
+
+
+@cli.group()
+def pitchers():
     pass
 
 
@@ -163,7 +40,7 @@ def train():
 @click.option('--filetypes', '-p', multiple=True, type=str)
 @click.option('--count', '-c', required=False, type=int, default=6)
 @click.option('--min_area', '-m', required=False, type=int)
-def process(input, output, filetypes, count, min_area):
+def preprocess(input, output, filetypes, count, min_area):
 
     # by default, support PNGs and JPGs
     if len(filetypes) == 0: filetypes = ['png', 'jpg']
@@ -174,8 +51,8 @@ def process(input, output, filetypes, count, min_area):
 
     if Path(input).is_dir():
         for file in files:
-            print(f"Processing image {file}")
-            analyze_file(file, output, Path(file).stem, count, min_area)
+            print(f"Preprocessing image {file}")
+            preprocess_file(file, output, Path(file).stem, count, min_area)
 
         # TODO: kmeans function doesn't seem to be thread-safe
         #  (running it on multiple cores in parallel causes all but 1 to fail)
@@ -188,23 +65,16 @@ def process(input, output, filetypes, count, min_area):
         #     pool.starmap(process, args)
         #     pool.terminate()
     else:
-        print(f"Processing image {input}")
-        analyze_file(input, output, Path(input).stem, count, min_area)
+        print(f"Preprocessing image {input}")
+        preprocess_file(input, output, Path(input).stem, count, min_area)
 
 
-@cli.command()
-@click.option('--input_directory', '-i', required=True, type=str)
-@click.option('--output_directory', '-o', required=True, type=str)
-def postprocess(input_directory, output_directory):
-    analyze_results(input_directory, output_directory)
-
-
-@train.command()
+@gpoints.command()
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--color', '-c', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
-def gpoints(input, output, color, filetypes):
+def load_labels(input, output, color, filetypes):
     color = color if str(color).startswith('#') else f"#{color}"
     hue_lo, hue_hi = hex_to_hue_range(color)
 
@@ -233,6 +103,51 @@ def gpoints(input, output, color, filetypes):
     with open(csv_path, 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for row in rows: writer.writerow(row)
+
+
+@gpoints.command()
+@click.option('--labels', '-l', required=True, type=str)
+@click.option('--images', '-i', required=True, type=str)
+def train(labels, images):
+    """
+    Trains a convolutional neural network model for density estimation of growth points.
+
+    Adapted from the Deep Plant Phenomics example:
+        https://deep-plant-phenomics.readthedocs.io/en/latest/Tutorial-Object-Counting-with-Heatmaps/
+
+    :param labels: The label file path (CSV format: image name, x1, y1, x2, y2, ...)
+    :param images: The image directory path
+    """
+
+    channels = 3  # RGB
+    model = dpp.HeatmapObjectCountingModel(debug=True, load_from_saved=False)
+    model.set_image_dimensions(128, 128, channels)
+    model.set_batch_size(32)
+    model.set_learning_rate(0.0001)
+    model.set_maximum_training_epochs(25)
+    model.set_test_split(0.75)
+    model.set_validation_split(0.0)
+
+    # load dataset
+    model.set_density_map_sigma(4.0)
+    model.load_heatmap_dataset_with_csv_from_directory(images, Path(labels).name)
+
+    # define architecture
+    model.add_input_layer()
+    model.add_convolutional_layer(filter_dimension=[3, 3, 3, 16], stride_length=1, activation_function='relu')
+    model.add_convolutional_layer(filter_dimension=[3, 3, 16, 32], stride_length=1, activation_function='relu')
+    model.add_convolutional_layer(filter_dimension=[5, 5, 32, 32], stride_length=1, activation_function='relu')
+    model.add_output_layer()
+
+    # begin
+    model.begin_training()
+
+
+@colors.command()
+@click.option('--input_directory', '-i', required=True, type=str)
+@click.option('--output_directory', '-o', required=True, type=str)
+def analyze(input_directory, output_directory):
+    color_analysis(input_directory, output_directory)
 
 
 if __name__ == '__main__':

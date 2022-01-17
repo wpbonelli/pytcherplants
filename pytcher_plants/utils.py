@@ -45,15 +45,39 @@ def hue_to_rgb_formatted(k):
     return f"rgb({int(r * 256)},{int(g * 256)},{int(b * 256)})"
 
 
-def row_to_hsv(row):
+def row_hsv(row):
     hsv = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
     return [hsv[0], hsv[1], hsv[2]]
 
 
-def get_treatment(row):
-    image_name = row['Image'].lower()
-    if 'control' in image_name: return 'Control'
-    elif 'maxsea' in image_name: return 'MaxSea'
-    elif 'calmag' in image_name: return 'CalMag'
-    elif '10_30_20' in image_name: return 'BloomBoost'
-    else: return np.NaN
+def row_date(row):
+    image = row['Image']
+    split = image.split('.')
+    if len(split) < 3:
+        print(f"Malformed image name (expected date.treatment.name.ext)")
+        return np.NaN
+    else:
+        date = split[0]
+        return date
+
+
+def row_treatment(row):
+    image = row['Image']
+    split = image.split('.')
+    if len(split) < 3:
+        print(f"Malformed image name (expected date.treatment.name.ext)")
+        return np.NaN
+    else:
+        treatment = split[1]
+        return treatment
+
+
+def row_title(row):
+    image = row['Image']
+    split = image.split('.')
+    if len(split) < 3:
+        print(f"Malformed image name (expected date.treatment.name.ext)")
+        return np.NaN
+    else:
+        title = split[2]
+        return title

@@ -1,8 +1,10 @@
+import csv
 from collections import Counter, OrderedDict
+from glob import glob
 from os.path import join
-from pprint import pprint
 from typing import Tuple
 
+import click
 import cv2
 import numpy as np
 
@@ -13,7 +15,7 @@ from plotly import express as px
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
-from pytcher_plants.utils import hue_to_rgb_formatted, rgb2hex
+from pytcher_plants.utils import hue_to_rgb_formatted, rgb2hex, row_date, row_treatment, row_title, row_hsv
 
 
 def rgb_analysis(data: pd.DataFrame, treatment: str, output_directory: str = '.'):
@@ -83,7 +85,7 @@ def hsv_analysis(data: pd.DataFrame, treatment: str, output_directory: str):
     fig.write_image(join(output_directory, treatment + '.hue.radial.png'))
 
 
-def color_analysis(image: np.ndarray, i: int, k: int = 15) -> Tuple[dict, np.ndarray]:
+def color_averaging(image: np.ndarray, i: int, k: int = 15) -> Tuple[dict, np.ndarray]:
     print(f"K-means color clustering for plant {i}, k = {k}...")
     z = np.float32(image.reshape((-1, 3)))
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
@@ -126,3 +128,55 @@ def color_analysis(image: np.ndarray, i: int, k: int = 15) -> Tuple[dict, np.nda
         print(f"Plant {i} color cluster {ii}: {hex_code}")
 
     return counts, filtered
+
+
+def color_analysis(input_directory, output_directory):
+    """
+    Color distribution analysis. Must run after raw images are preprocessed.
+
+    :param input_directory: the directory containing results from preprocessing
+    :param output_directory: the directory to contain result files
+    """
+
+    # images = glob(join(input_directory, '*.JPG')) + glob(join(input_directory, '*.jpg'))
+    # print("Input images:", len(images))
+
+    # list all the result CSVs for each image file (produced by CLI process command)
+    print(input_directory)
+    results = glob(join(input_directory, '*.CSV')) + glob(join(input_directory, '*.csv'))
+    print("Result files:", len(results))
+
+    headers = []
+    rows = []
+    for result in results:
+        with open(result, 'r') as file:
+            reader = csv.reader(file)
+            if len(headers) == 0:
+                headers = next(reader, None)
+            else:
+                next(reader, None)
+            for row in reader: rows.append(row)
+
+    # create dataframe from rows
+    df = pd.DataFrame(rows, columns=headers)
+
+    # extract date, treatment and name from image name
+    df['Date'] = df.apply(row_date, axis=1)
+    df['Treatment'] = df.apply(row_treatment, axis=1)
+    df['Title'] = df.apply(row_title, axis=1)
+
+    # drop rows with unknowns (indicating malformed image name)
+    df.dropna(how='any', inplace=True)
+
+    # HSV color representation
+    df['H'], df['S'], df['V'] = zip(*df.apply(row_hsv, axis=1))
+
+    # color analysis for each treatment separately
+    treatments = list(np.unique(df['Treatment']))
+    for treatment in treatments:
+        # get subset corresponding to this treatment
+        subset = df[df['Treatment'] == treatment]
+        print(treatment + ":", len(subset))
+
+        rgb_analysis(subset, treatment, output_directory)
+        hsv_analysis(subset, treatment, output_directory)

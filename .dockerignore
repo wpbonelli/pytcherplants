@@ -1,6 +1,9 @@
 data_*
+input*
 output*
 plantit.yaml
 thresholder.py
 **/.ipynb_checkpoints/**
 venv
+generated_heatmaps
+mask_ckpt.txt

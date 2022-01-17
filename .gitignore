@@ -1,5 +1,8 @@
 *.xlsx
 */__pycache__/*
+deepplantphenomics/
+generated_heatmaps
+mask_ckpt.txt
 bin/
 lib/
 pyvenv.cfg
@@ -16,7 +19,7 @@ utils.pyc
 tools/__pycache__/
 dark
 data_*
-input
+input*
 output*
 dist/
 core/__pycache__/
