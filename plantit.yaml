@@ -1,6 +1,6 @@
 name: "Pytcher Plants"
 author: "Wes Bonelli"
-public: False
+public: True
 image: docker://wbonelli/pytcher-plants
 commands: /opt/pytcher-plants/pipeline.sh
 projects:

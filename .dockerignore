@@ -7,3 +7,4 @@ thresholder.py
 venv
 generated_heatmaps
 mask_ckpt.txt
+*.tif
