@@ -34,9 +34,8 @@ Jupyter notebooks detailing methods are in `notebooks`. A few test photos are in
 
 ## Approach
 
-This pipeline focuses on a few areas of interest:
+This repository currently provides functions for color distribution analysis. A few more features are under development, but not yet complete:
 
-- color distribution analysis (RGB and hue)
 - growth point counting via density estimation
 - pitcher counting, semantic segmentation, & traits
 
@@ -45,6 +44,8 @@ This pipeline focuses on a few areas of interest:
 First each image is preprocessed and pots are segmented. The number of pots per image can be provided on the command line, otherwise it is automatically inferred. A series of preprocessing steps are first applied including Gaussian blur and an adaptive threshold, followed by contour detection and a hue filter. Once individual pots and the plants within have been distinguished, each is cropped for individual analysis. K-means clustering is used to assign each pixel to a centroid in RGB-space (corresponding to the nearest color cluster). This yields a reduced image with k distinct colors. Pixels are counted and frequencies recorded, grouped by plant, timestamp, and fertilizer treatment. Next, another round of k-means clustering is applied separately to the (RGB) pixel distribution corresponding to each treatment. Pixels are also binned according to hue.
 
 ### Growth points
+
+**This feature is still in developement.**
 
 Several methods are compared for estimating growth point locations, including:
 
@@ -67,6 +68,8 @@ A binary skeletonization is obtained for each plant after background and pot pix
 A convolutional neural net, modeled on the Deep Plant Phenomics project's example, is used here for density estimation. This produces a 2-dimensional Gaussian distribution over the cropped image of each pot: a heatmap showing locations the model considers the likeliest growth points.
 
 ### Pitcher segmentation & traits
+
+**This feature is still in development.**
 
 TODO
 
