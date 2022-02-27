@@ -26,7 +26,7 @@ Contour Detection             |            Color Analysis             | Growth P
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-Developed for images obtained from a fertilization experiment performed by [Mason McNair](https://github.com/mmcnair91) at the University of Georgia. Segmentation and analysis adapted from [SMART](https://github.com/Computational-Plant-Science/SMART) (Speedy Measurement of Arabidopsis Rosette Traits) by [Suxing Liu](https://github.com/lsx1980), also at UGA.
+Developed for images obtained from an experiment performed by [Mason McNair](https://github.com/mmcnair91) at the University of Georgia. Segmentation strategy (via [Ilastik](https://www.ilastik.org/) pixel classification) adapted from [Peter Pietrzyk's](https://github.com/PeterPieGH) [DIRTmu](https://github.com/Computational-Plant-Science/DIRTmu) project. Color and trait analysis adapted from [SMART](https://github.com/Computational-Plant-Science/SMART) (Speedy Measurement of Arabidopsis Rosette Traits) by [Suxing Liu](https://github.com/lsx1980).
 
 ## Project layout
 
