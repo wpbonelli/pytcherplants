@@ -1,6 +1,4 @@
-# FROM ubuntu:20.04
-FROM python:3.7-bullseye
-
+FROM python:3.7-slim
 LABEL maintainer="Wes Bonelli"
 
 COPY . /opt/pytcher-plants
@@ -8,8 +6,6 @@ COPY . /opt/pytcher-plants
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
     build-essential \
-    # python3-setuptools \
-    # python3-pip \
     python3-numexpr \
     libgl1-mesa-glx \
     libsm6 \
@@ -22,7 +18,11 @@ RUN apt-get update && \
 RUN pip install --upgrade pip && \
     pip install -r /opt/pytcher-plants/requirements.txt
 
-# Deep Plant Phenomics is not available via pip
+# install ilastik
+RUN curl -O https://files.ilastik.org/ilastik-1.4.0b21-gpu-Linux.tar.bz2 && tar xjf ilastik-1.*-Linux.tar.bz2
+ENV PATH="/opt/ilastik/:${PATH}"
+
+# install deep plant phenomics (not available via pip)
 RUN git clone https://github.com/p2irc/deepplantphenomics.git /opt/deepplantphenomics && \
     pip install -e /opt/deepplantphenomics
 

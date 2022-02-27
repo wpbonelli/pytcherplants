@@ -1,8 +1,8 @@
 name: "Pytcher Plants"
-author: "Wes Bonelli"
+author: "Mason McNair & Wes Bonelli"
 public: False
 image: docker://wbonelli/pytcher-plants
-commands: python3 /opt/pytcher-plants/pytcher_plants/base.py process -i $INPUT -o $OUTPUT
+commands: ./opt/code/plantit_pipeline.sh
 projects:
   - db74f053-2a1f-44f0-8864-f1938ca4680a
   - 2448ab47-d0be-41e4-a751-5cc1ece17a32
