@@ -2,20 +2,20 @@ name: "Pytcher Plants"
 author: "Mason McNair & Wes Bonelli"
 public: False
 image: docker://wbonelli/pytcher-plants
-commands: ./opt/code/plantit_pipeline.sh
-projects:
-  - db74f053-2a1f-44f0-8864-f1938ca4680a
-  - 2448ab47-d0be-41e4-a751-5cc1ece17a32
+commands: ./opt/code/pipeline.sh $INPUT $OUTPUT
 input:
   kind: files
-  path:
   filetypes:
+    - tif
+    - tiff
     - jpg
     - png
 output:
   path:
   include:
     patterns:
+      - tif
+      - tiff
       - png
       - csv
       - xlsx

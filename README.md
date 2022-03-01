@@ -2,9 +2,9 @@
 
 Python/OpenCV geometric trait and color analysis for top-down images of pitcher plants.
 
-Contour Detection             |            Color Analysis             | Growth Point Estimation |  Pitcher Segmentation & Traits | 
-:----------------------------:|:-------------------------------------:|:-----------------------:|:------------------------------:|
-![](media/cont.png)  | ![](media/rad.png) ![](media/rgb.png) |    ![](media/gp.jpg)    | TODO
+Pot Segmentation             |            Color Analysis             | Growth Point Estimation | Geometric Traits | 
+:----------------------------:|:-------------------------------------:|:-----------------------:|:----------------:|
+![](media/cont.png)  | ![](media/rad.png) ![](media/rgb.png) |    ![](media/gp.jpg)    |       TODO       
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->

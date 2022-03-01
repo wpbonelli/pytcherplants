@@ -19,7 +19,9 @@ RUN pip install --upgrade pip && \
     pip install -r /opt/pytcher-plants/requirements.txt
 
 # install ilastik
-RUN curl -O https://files.ilastik.org/ilastik-1.4.0b21-gpu-Linux.tar.bz2 && tar xjf ilastik-1.*-Linux.tar.bz2
+WORKDIR /opt/ilastik
+RUN curl -O https://files.ilastik.org/ilastik-1.4.0b21-gpu-Linux.tar.bz2 && \
+    tar xjf ilastik-1.*-Linux.tar.bz2
 ENV PATH="/opt/ilastik/:${PATH}"
 
 # install deep plant phenomics (not available via pip)

@@ -3,6 +3,7 @@ input*
 output*
 plantit.yaml
 thresholder.py
+notebooks
 **/.ipynb_checkpoints/**
 venv
 generated_heatmaps

@@ -1,14 +1,16 @@
+import csv
 from glob import glob
 from os.path import join
 from pathlib import Path
 
 import click
-import matplotlib as mpl
 import deepplantphenomics as dpp
+import matplotlib as mpl
+import pandas as pd
+from cv2 import cv2
 
-from pytcher_plants.color import color_analysis
-from pytcher_plants.growth_points import detect_growth_point_labels, growth_point_labels_to_csv_format
-from pytcher_plants.preprocess import preprocess_file
+from pytcher_plants.gpoints import detect_growth_point_labels, growth_point_labels_to_csv_format
+from pytcher_plants.traits import get_pots, TRAITS_HEADERS, get_pot_traits, cumulative_color_analysis
 from pytcher_plants.utils import hex_to_hue_range
 
 mpl.rcParams['figure.dpi'] = 300
@@ -20,56 +22,26 @@ def cli():
 
 
 @cli.group()
-def colors():
-    pass
-
-
-@cli.group()
 def gpoints():
     pass
 
 
-@cli.group()
-def pitchers():
+@gpoints.group()
+def hull():
     pass
 
 
-@cli.command()
-@click.option('--input', '-i', required=True, type=str)
-@click.option('--output', '-o', required=True, type=str)
-@click.option('--filetypes', '-p', multiple=True, type=str)
-@click.option('--count', '-c', required=False, type=int, default=6)
-@click.option('--min_area', '-m', required=False, type=int)
-def preprocess(input, output, filetypes, count, min_area):
-
-    # by default, support PNGs and JPGs
-    if len(filetypes) == 0: filetypes = ['png', 'jpg']
-    extensions = filetypes
-    extensions = [e for es in [[extension.lower(), extension.upper()] for extension in extensions] for e in es]
-    patterns = [join(input, f"*.{p}") for p in extensions]
-    files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
-
-    if Path(input).is_dir():
-        for file in files:
-            print(f"Preprocessing image {file}")
-            preprocess_file(file, output, Path(file).stem, count, min_area)
-
-        # TODO: kmeans function doesn't seem to be thread-safe
-        #  (running it on multiple cores in parallel causes all but 1 to fail)
-        #  ...reinstate if workaround found
-        #
-        # processes = psutil.cpu_count(logical=False)
-        # print(f"Using {processes} processes for {len(files)} images")
-        # with closing(multiprocessing.Pool(processes=processes)) as pool:
-        #     args = [(file, output, Path(file).stem, count) for file in files]
-        #     pool.starmap(process, args)
-        #     pool.terminate()
-    else:
-        print(f"Preprocessing image {input}")
-        preprocess_file(input, output, Path(input).stem, count, min_area)
+@gpoints.group()
+def skel():
+    pass
 
 
-@gpoints.command()
+@gpoints.group()
+def cnn():
+    pass
+
+
+@cnn.command()
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--color', '-c', required=True, type=str)
@@ -77,7 +49,6 @@ def preprocess(input, output, filetypes, count, min_area):
 def load_labels(input, output, color, filetypes):
     color = color if str(color).startswith('#') else f"#{color}"
     hue_lo, hue_hi = hex_to_hue_range(color)
-
     rows = []
     if Path(input).is_dir():
         if len(filetypes) == 0: filetypes = ['png', 'jpg']
@@ -105,7 +76,7 @@ def load_labels(input, output, color, filetypes):
         for row in rows: writer.writerow(row)
 
 
-@gpoints.command()
+@cnn.command()
 @click.option('--labels', '-l', required=True, type=str)
 @click.option('--images', '-i', required=True, type=str)
 def train(labels, images):
@@ -143,11 +114,35 @@ def train(labels, images):
     model.begin_training()
 
 
-@colors.command()
-@click.option('--input_directory', '-i', required=True, type=str)
-@click.option('--output_directory', '-o', required=True, type=str)
-def analyze(input_directory, output_directory):
-    color_analysis(input_directory, output_directory)
+@cli.group()
+def traits():
+    pass
+
+
+@traits.command()
+@click.option('--input', '-i', required=True, type=str)
+@click.option('--output', '-o', required=True, type=str)
+@click.option('--filetypes', '-p', multiple=True, type=str)
+@click.option('--count', '-c', required=False, type=int, default=6)
+@click.option('--min_area', '-m', required=False, type=int)
+def analyze(input, output, filetypes, count, min_area):
+    if Path(input).is_dir():
+        # by default, support PNGs and JPGs
+        if len(filetypes) == 0: filetypes = ['png', 'jpg']
+        extensions = filetypes
+        extensions = [e for es in [[extension.lower(), extension.upper()] for extension in extensions] for e in es]
+        patterns = [join(input, f"*.{p}") for p in extensions]
+        files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
+        pots_by_image = {Path(file).stem: get_pots(file, output, count, min_area) for file in files}
+        rows = [get_pot_traits(image_name, output, image_pots) for image_name, image_pots in pots_by_image.items()]
+        rows = [r for rr in rows for r in rr]  # flatten 2d list to 1d
+        cumulative_color_analysis(pd.DataFrame(rows, columns=TRAITS_HEADERS), output)
+    elif Path(input).is_file():
+        image_pots = get_pots(input, output, count, min_area)
+        rows = get_pot_traits(Path(input).stem, output, image_pots)
+        cumulative_color_analysis(pd.DataFrame(rows, columns=TRAITS_HEADERS), output)
+    else:
+        raise ValueError(f"Invalid input path: {input}")
 
 
 if __name__ == '__main__':

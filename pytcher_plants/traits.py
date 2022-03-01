@@ -1,21 +1,116 @@
 import csv
 from collections import Counter, OrderedDict
-from glob import glob
+from heapq import nlargest
 from os.path import join
-from typing import Tuple
+from pathlib import Path
+from typing import List, Tuple
 
-import click
 import cv2
 import numpy as np
-
 import pandas as pd
 import seaborn as sns
+from matplotlib import pyplot as plt
+from plotly import graph_objects as go, express as px
 from scipy.cluster.vq import kmeans2
-from plotly import express as px
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 
-from pytcher_plants.utils import hue_to_rgb_formatted, rgb2hex, row_date, row_treatment, row_title, row_hsv
+from pytcher_plants.utils import rgb2hex, hue_to_rgb_formatted, hex2rgb, row_date, row_treatment, row_title, row_hsv
+
+
+TRAITS_HEADERS = ['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'Freq', 'Dens']
+
+
+def get_pots(
+        input_file_path: str,
+        output_directory_path: str,
+        count: int = None,
+        min_area: int = None) -> List[np.ndarray]:
+    """
+    Segment plant tissues in their respective pots from background pixels.
+    Produces a CSV file containing pot dimensions and PNG images of each pot cropped out of the original image.
+
+    :param input_file_path: The path to the image file
+    :param output_directory_path: The output directory path
+    :param count: The number of pots in the image (automatically detected if not provided)
+    :param min_area: The minimum pot area
+    :return The cropped pot regions
+    """
+    
+    input_file_stem = Path(input_file_path).stem
+
+    print(f"Applying Gaussian blur")
+    image = cv2.imread(input_file_path)
+    blurred = cv2.blur(image, (25, 25))
+    blurred = cv2.GaussianBlur(blurred, (11, 75), cv2.BORDER_DEFAULT)
+
+    print(f"Applying selective color mask")
+    hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)
+    mask = cv2.inRange(hsv, np.array([0, 70, 40]), np.array([179, 255, 255]))
+
+    print(f"Dilating image")
+    opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    dilated = cv2.dilate(opened, np.ones((5, 5)))
+    masked = cv2.bitwise_and(image, image, mask=dilated)
+
+    print(f"Detecting pot contours")
+    masked_copy = masked.copy()
+    _, thresh = cv2.threshold(mask, 40, 255, 0)
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cv2.drawContours(masked_copy, contours, -1, 255, 3)
+    div = 8
+    keep = count if count is not None and count > 0 else 100  # what is a suitable maximum?
+    min_area = min_area if min_area is not None and min_area > 0 else ((image.shape[0] / div) * (image.shape[1] / div))
+    largest = [c for c in nlargest(keep, contours, key=cv2.contourArea) if cv2.contourArea(c) > min_area]
+    print(f"Found {len(largest)} pots (minimum area: {min_area} pixels)")
+
+    print(f"Saving pot dimensions and cropped images")
+    pots = []
+    with open(join(output_directory_path, input_file_stem + '.pots.csv'), 'w') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(['Image', 'Pot', 'Height', 'Width'])
+        for i, c in enumerate(largest):
+            x, y, w, h = cv2.boundingRect(c)
+            writer.writerow([input_file_stem, str(i + 1), str(h), str(w)])
+            pot = masked.copy()
+            pots.append(pot[y:y + h, x:x + w])
+            cv2.rectangle(masked_copy, (x, y), (x + w, y + h), (36, 255, 12), 3)
+            cv2.putText(masked_copy, f"pot {i + 1}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (36, 255, 12), 3)
+            cv2.imwrite(join(output_directory_path, input_file_stem + '.pot' + str(i) + '.png'), pot)
+    cv2.imwrite(join(output_directory_path, input_file_stem + '.pots.png'), masked_copy)
+
+    return pots
+
+
+def get_pot_traits(
+        input_name: str,
+        output_directory_path: str,
+        pots: List[np.ndarray]) -> List[List[str]]:
+    print(f"Pixel-counting and initial color clustering")
+    rows = []
+    with open(join(output_directory_path, input_name + '.colors.csv'), 'w') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(TRAITS_HEADERS)
+        for i, pot in enumerate(pots):
+            pot_copy = pot.copy()
+            rgb = cv2.cvtColor(pot_copy, cv2.COLOR_BGR2RGB)
+            clusters, averaged = color_averaging(rgb, i)
+            total = sum(clusters.values())
+            for hex, freq in clusters.items():
+                r, g, b = hex2rgb(hex)
+                dens = freq / total
+                row = [input_name, str(i), hex, r, g, b, freq, dens]
+                writer.writerow(row)
+                rows.append(row)
+
+            cv2.imwrite(f"{join(output_directory_path, input_name + '.' + str(i) + '.png')}", pot_copy)
+            cv2.imwrite(f"{join(output_directory_path, input_name + '.' + str(i) + '.averaged.png')}", cv2.cvtColor(averaged, cv2.COLOR_RGB2BGR))
+    return rows
+
+
+def get_pitchers(
+        input_file_path,
+        output_directory_path) -> List[np.ndarray]:
+    # TODO
+    pass
 
 
 def rgb_analysis(data: pd.DataFrame, treatment: str, output_directory: str = '.'):
@@ -130,35 +225,13 @@ def color_averaging(image: np.ndarray, i: int, k: int = 15) -> Tuple[dict, np.nd
     return counts, filtered
 
 
-def color_analysis(input_directory, output_directory):
+def cumulative_color_analysis(df: pd.DataFrame, output_directory_path: str):
     """
-    Color distribution analysis. Must run after raw images are preprocessed.
+    Analyze cumulative color distribution in HSV and RGB formats.
 
-    :param input_directory: the directory containing results from preprocessing
-    :param output_directory: the directory to contain result files
+    :param df: The dataframe containing color distribution information for all images and pots
+    :param output_directory_path: The directory to write result files to
     """
-
-    # images = glob(join(input_directory, '*.JPG')) + glob(join(input_directory, '*.jpg'))
-    # print("Input images:", len(images))
-
-    # list all the result CSVs for each image file (produced by CLI process command)
-    print(input_directory)
-    results = glob(join(input_directory, '*.CSV')) + glob(join(input_directory, '*.csv'))
-    print("Result files:", len(results))
-
-    headers = []
-    rows = []
-    for result in results:
-        with open(result, 'r') as file:
-            reader = csv.reader(file)
-            if len(headers) == 0:
-                headers = next(reader, None)
-            else:
-                next(reader, None)
-            for row in reader: rows.append(row)
-
-    # create dataframe from rows
-    df = pd.DataFrame(rows, columns=headers)
 
     # extract date, treatment and name from image name
     df['Date'] = df.apply(row_date, axis=1)
@@ -178,5 +251,5 @@ def color_analysis(input_directory, output_directory):
         subset = df[df['Treatment'] == treatment]
         print(treatment + ":", len(subset))
 
-        rgb_analysis(subset, treatment, output_directory)
-        hsv_analysis(subset, treatment, output_directory)
+        rgb_analysis(subset, treatment, output_directory_path)
+        hsv_analysis(subset, treatment, output_directory_path)
