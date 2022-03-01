@@ -21,3 +21,4 @@ nbconvert
 plotly
 kaleido
 click
+pytest

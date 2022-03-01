@@ -12,6 +12,7 @@ from cv2 import cv2
 from pytcher_plants.gpoints import detect_growth_point_labels, growth_point_labels_to_csv_format
 from pytcher_plants.traits import get_pots, TRAITS_HEADERS, get_pot_traits, cumulative_color_analysis
 from pytcher_plants.utils import hex_to_hue_range
+from pytcher_plants.ilastik import postprocess_pixel_classification
 
 mpl.rcParams['figure.dpi'] = 300
 
@@ -19,6 +20,29 @@ mpl.rcParams['figure.dpi'] = 300
 @click.group()
 def cli():
     pass
+
+
+@cli.group()
+def ilastik():
+    pass
+
+
+@ilastik.command()
+@click.option('--input', '-i', required=True, type=str)
+@click.option('--mask', '-m', required=True, type=str)
+@click.option('--output', '-o', required=True, type=str)
+def postpc(input, mask, output):
+    if not Path(input).is_file():
+        raise ValueError(f"Input must be a valid file path")
+    if not Path(mask).is_file():
+        raise ValueError(f"Mask must be a valid file path")
+    if not Path(output).is_dir():
+        raise ValueError(f"Output must be a valid directory path")
+
+    input_stem = Path(input).stem
+    mask_stem = Path(mask).stem
+    print(f"Post-processing ilastik pixel classification image {input_stem} with mask {mask_stem}")
+    postprocess_pixel_classification(input, mask, output)
 
 
 @cli.group()
