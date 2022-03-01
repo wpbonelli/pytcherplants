@@ -1,6 +1,6 @@
 # pytcher-plants
 
-Python/OpenCV geometric trait and color analysis for top-down images of pitcher plants.
+Geometric trait and color analysis for top-down images of pitcher plants, built on top of [ilastik](https://www.ilastik.org/), [OpenCV](https://github.com/opencv/opencv-python), and [Deep Plant Phenomics](https://github.com/p2irc/deepplantphenomics).
 
 Pot Segmentation             |            Color Analysis             | Growth Point Estimation | Geometric Traits | 
 :----------------------------:|:-------------------------------------:|:-----------------------:|:----------------:|
