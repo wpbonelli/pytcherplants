@@ -1,8 +1,8 @@
 from os.path import join
 from pathlib import Path
 
-from cv2 import cv2
 import numpy as np
+from cv2 import cv2
 
 
 def renormalize(image: np.ndarray) -> np.ndarray:
@@ -20,10 +20,10 @@ def postprocess_pixel_classification(
     Post-processes the results of ilastik pixel segmentation.
     Converts [1-2] masks to [0-255] and applies mask to original image to segment foreground.
 
-    :param input_file_path:
-    :param mask_file_path:
-    :param output_directory_path:
-    :return:
+    :param input_file_path: The input image path
+    :param mask_file_path: The path to the mask file produced by ilastik pixel classification
+    :param output_directory_path: The output directory path
+    :return: A 2-tuple containing 1) the post-processed mask and 2) segmented original image with the mask applied
     """
 
     orig_img = cv2.imread(input_file_path).copy()
@@ -32,8 +32,10 @@ def postprocess_pixel_classification(
     # ilastik pixel segmentation returns [1, 2], with 1=foreground & 2=background
     # we want to convert this to 0=background, 255=foreground
     mask = renormalize(mask_img)
-    cv2.imwrite(join(output_directory_path, f"{Path(mask_file_path).stem}.renormed.jpg"), mask)
+    cv2.imwrite(join(output_directory_path, f"{Path(mask_file_path).stem}_mask.jpg"), mask)
 
     # apply the mask to the original image
     masked = cv2.bitwise_and(orig_img, mask)
-    cv2.imwrite(join(output_directory_path, f"{Path(input_file_path).stem}.masked.jpg"), masked)
+    cv2.imwrite(join(output_directory_path, f"{Path(input_file_path).stem}_masked.jpg"), masked)
+
+    return mask, masked
