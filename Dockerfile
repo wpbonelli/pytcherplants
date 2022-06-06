@@ -16,7 +16,8 @@ RUN apt-get update && \
     git
 
 RUN pip install --upgrade pip && \
-    pip install -r /opt/pytcherplants/requirements.txt
+    # pip install -r /opt/pytcherplants/requirements.txt && \
+    pip install -e /opt/pytcherplants
 
 # install ilastik
 WORKDIR /opt/ilastik

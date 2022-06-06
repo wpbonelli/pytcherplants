@@ -2,7 +2,7 @@ name: "Pytcher Plants"
 author: "Mason McNair & Wes Bonelli"
 public: False
 image: docker://wbonelli/pytcherplants
-commands: ./opt/pytcherplants/pipeline.sh $INPUT $OUTPUT
+commands: /opt/pytcherplants/pipeline.sh $INPUT $OUTPUT
 input:
   kind: files
   filetypes:
