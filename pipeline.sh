@@ -17,17 +17,18 @@ output=$2
 
 if [[ "$ilastik" -eq 1 ]]; then
   # ilastik pixel segmentation
-  /opt/ilastik/ilastik-1.4.0b21-gpu-Linux/run_ilastik.sh --headless --project="/opt/pytcherplants/pytcherplants.ilp" --output_format="tiff" --output_filename_format="$output/{nickname}_segmented.tiff" --export_source="Simple Segmentation" "$input"
+  /opt/ilastik/ilastik-1.4.0b21-gpu-Linux/run_ilastik.sh --headless --project="/opt/pytcherplants/pytcherplants.ilp" --output_format="tiff" --output_filename_format="$output/{nickname}.segmented.tiff" --export_source="Simple Segmentation" "$input"
 
   # postprocess ilastik pixel segmentation results
-  segmented="$output/$(basename "$input" | cut -d. -f1)_segmented.tiff"
+  base="$output/$(basename "$input" | rev | cut -d. -f2- | rev)"
+  segmented="$base.segmented.tiff"
   echo "$segmented"
-  python3 /opt/pytcherplants/pytcherplants/cli.py ilastik postpc -i "$input" -m "$segmented" -o "$output"
-  input="$output/$(basename "$input" | cut -d. -f1)_masked.tiff"
+  pypl ilastik postpc -i "$input" -m "$segmented" -o "$output"
+  input="$base.masked.jpg"
 fi
 
 # geometric trait and color analysis from masked plant tissues
-python3 /opt/pytcherplants/pytcherplants/cli.py colors analyze -i "$input" -o "$output"
+pypl colors analyze -i "$input" -o "$output"
 
 # TODO ilastik growth point counting
 # TODO ilastik pitcher counting

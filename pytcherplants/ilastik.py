@@ -32,10 +32,10 @@ def postprocess_pixel_classification(
     # ilastik pixel segmentation returns [1, 2], with 1=foreground & 2=background
     # we want to convert this to 0=background, 255=foreground
     mask = renormalize(mask_img)
-    cv2.imwrite(join(output_directory_path, f"{Path(mask_file_path).stem}_mask.jpg"), mask)
+    cv2.imwrite(join(output_directory_path, f"{Path(mask_file_path).stem}.mask.jpg"), mask)
 
     # apply the mask to the original image
     masked = cv2.bitwise_and(orig_img, mask)
-    cv2.imwrite(join(output_directory_path, f"{Path(input_file_path).stem}_masked.jpg"), masked)
+    cv2.imwrite(join(output_directory_path, f"{Path(input_file_path).stem}.masked.jpg"), masked)
 
     return mask, masked
