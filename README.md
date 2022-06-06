@@ -1,6 +1,6 @@
 # pytcherplants
 
-![CI](https://github.com/w-bonelli/pytcherplants/workflows/ci/badge.svg)
+[![CI](https://github.com/w-bonelli/pytcherplants/actions/workflows/ci.yaml/badge.svg)](https://github.com/w-bonelli/pytcherplants/actions/workflows/ci.yaml)
 [![Coverage Status](https://coveralls.io/repos/github/w-bonelli/pytcherplants/badge.svg?branch=main)](https://coveralls.io/github/w-bonelli/pytcherplants?branch=main)
 
 
