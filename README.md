@@ -1,5 +1,9 @@
 # pytcherplants
 
+![CI](https://github.com/w-bonelli/pytcherplants/workflows/ci/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/w-bonelli/pytcherplants/badge.svg?branch=main)](https://coveralls.io/github/w-bonelli/pytcherplants?branch=main)
+
+
 Geometric trait and color analysis for top-down images of pitcher plants, built on top of [ilastik](https://www.ilastik.org/), [OpenCV](https://github.com/opencv/opencv-python), and [Deep Plant Phenomics](https://github.com/p2irc/deepplantphenomics).
 
 Pot Segmentation             |            Color Analysis             | Growth Point Estimation | Geometric Traits | 
