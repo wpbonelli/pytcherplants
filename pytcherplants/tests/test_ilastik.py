@@ -2,7 +2,7 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 
-from pytcher_plants.ilastik import postprocess_pixel_classification
+from pytcherplants.ilastik import postprocess_pixel_classification
 
 input_path = 'samples/raw/1_14_19.10_30_20.5V4B3121.JPG'  # original image
 imask_path = 'samples/masks/raw/1_14_19.10_30_20.5V4B3121_segmented.tiff'  # before post-processing
