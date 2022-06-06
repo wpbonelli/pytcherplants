@@ -4,7 +4,6 @@ from os.path import join
 from pathlib import Path
 
 import click
-import deepplantphenomics as dpp
 import matplotlib as mpl
 import pandas as pd
 from cv2 import cv2
