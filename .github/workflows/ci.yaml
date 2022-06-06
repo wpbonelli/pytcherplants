@@ -38,11 +38,6 @@ jobs:
         run: |
           coverage run --source=pytcherplants -m pytest /home/runner/work/pytcherplants/pytcherplants/pytcherplants/tests -s
           coveralls
-      - name: Update Coveralls
-        run: |
-          coveralls --finish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   publish:
     needs: [build]
     runs-on: ubuntu-latest
