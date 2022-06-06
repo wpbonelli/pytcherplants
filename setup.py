@@ -23,6 +23,6 @@ setuptools.setup(
         ]
     },
     python_requires='>=3.6.8',
-    install_requires=['requests', 'httpx', 'click', 'tenacity', 'tqdm', 'pytest', 'pytest-dotenv', 'pytest-asyncio'],
+    install_requires=['requests', 'httpx', 'click', 'tenacity', 'tqdm', 'pytest', 'pytest-dotenv', 'pytest-asyncio', 'psutil', 'numpy', 'numba', 'pandas', 'networkx', 'skan', 'tabulate', 'imutils', 'python-magic', 'seaborn', 'openpyxl', 'opencv-python', 'matplotlib', 'scikit-learn', 'scikit-image', 'scikit-build', 'scipy', 'Pillow', 'jupyter', 'nbconvert', 'plotly', 'kaleido'],
     setup_requires=['wheel'],
     tests_require=['pytest', 'coveralls', 'dotenv', 'pytest-asyncio'])
