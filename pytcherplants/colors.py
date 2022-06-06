@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from plotly import graph_objects as go, express as px
 from scipy.cluster.vq import kmeans2
 
-from pytcher_plants.utils import rgb2hex, hue_to_rgb_formatted, hex2rgb, row_date, row_treatment, row_title, row_hsv
+from pytcherplants.utils import rgb2hex, hue_to_rgb_formatted, hex2rgb, row_date, row_treatment, row_title, row_hsv
 
 
 TRAITS_HEADERS = ['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'Freq', 'Dens']

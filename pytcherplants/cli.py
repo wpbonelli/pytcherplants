@@ -9,10 +9,10 @@ import matplotlib as mpl
 import pandas as pd
 from cv2 import cv2
 
-from pytcher_plants.gpoints import detect_growth_point_labels, growth_point_labels_to_csv_format
-from pytcher_plants.traits import get_pots, TRAITS_HEADERS, get_pot_traits, cumulative_color_analysis
-from pytcher_plants.utils import hex_to_hue_range
-from pytcher_plants.ilastik import postprocess_pixel_classification
+from pytcherplants.gpoints import detect_growth_point_labels, growth_point_labels_to_csv_format
+from pytcherplants.colors import TRAITS_HEADERS, get_pots, get_pot_traits, cumulative_color_analysis
+from pytcherplants.utils import hex_to_hue_range
+from pytcherplants.ilastik import postprocess_pixel_classification
 
 mpl.rcParams['figure.dpi'] = 300
 
@@ -32,16 +32,13 @@ def ilastik():
 @click.option('--mask', '-m', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 def postpc(input, mask, output):
-    if not Path(input).is_file():
-        raise ValueError(f"Input must be a valid file path")
-    if not Path(mask).is_file():
-        raise ValueError(f"Mask must be a valid file path")
-    if not Path(output).is_dir():
-        raise ValueError(f"Output must be a valid directory path")
+    if not Path(input).is_file(): raise ValueError(f"Input must be a valid file path")
+    if not Path(mask).is_file(): raise ValueError(f"Mask must be a valid file path")
+    if not Path(output).is_dir(): raise ValueError(f"Output must be a valid directory path")
 
     input_stem = Path(input).stem
     mask_stem = Path(mask).stem
-    print(f"Post-processing ilastik pixel classification image {input_stem} with mask {mask_stem}")
+    print(f"Post-processing Ilastik pixel classification image {input_stem} with mask {mask_stem}")
     postprocess_pixel_classification(input, mask, output)
 
 
@@ -139,11 +136,11 @@ def train(labels, images):
 
 
 @cli.group()
-def traits():
+def colors():
     pass
 
 
-@traits.command()
+@colors.command()
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
@@ -153,8 +150,7 @@ def analyze(input, output, filetypes, count, min_area):
     if Path(input).is_dir():
         # by default, support PNGs and JPGs
         if len(filetypes) == 0: filetypes = ['png', 'jpg']
-        extensions = filetypes
-        extensions = [e for es in [[extension.lower(), extension.upper()] for extension in extensions] for e in es]
+        extensions = [e for es in [[extension.lower(), extension.upper()] for extension in filetypes] for e in es]
         patterns = [join(input, f"*.{p}") for p in extensions]
         files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
         pots_by_image = {Path(file).stem: get_pots(file, output, count, min_area) for file in files}

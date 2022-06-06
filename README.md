@@ -1,4 +1,4 @@
-# pytcher-plants
+# pytcherplants
 
 Geometric trait and color analysis for top-down images of pitcher plants, built on top of [ilastik](https://www.ilastik.org/), [OpenCV](https://github.com/opencv/opencv-python), and [Deep Plant Phenomics](https://github.com/p2irc/deepplantphenomics).
 

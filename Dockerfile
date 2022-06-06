@@ -1,7 +1,7 @@
 FROM python:3.7-slim
 LABEL maintainer="Wes Bonelli"
 
-COPY . /opt/pytcher-plants
+COPY . /opt/pytcherplants
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -16,7 +16,7 @@ RUN apt-get update && \
     git
 
 RUN pip install --upgrade pip && \
-    pip install -r /opt/pytcher-plants/requirements.txt
+    pip install -r /opt/pytcherplants/requirements.txt
 
 # install ilastik
 WORKDIR /opt/ilastik
@@ -30,4 +30,4 @@ RUN git clone https://github.com/p2irc/deepplantphenomics.git /opt/deepplantphen
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
-ENV PYTHONPATH=/opt/pytcher-plants
+ENV PYTHONPATH=/opt/pytcherplants
