@@ -69,6 +69,8 @@ def analyze(input, output, filetypes, count, min_area):
 
         print(f"Running individual color analysis...")
         plants = {Path(file).stem: segment_plants(file, output, count, min_area) for file in files}
+        data = []
+
         data = [r for rr in [color_analysis(name, output, pts) for name, pts, in plants.items()] for r in rr]
 
         print(f"Running cumulative color analysis")

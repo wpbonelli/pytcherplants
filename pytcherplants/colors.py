@@ -19,7 +19,8 @@ RESULT_HEADERS = ['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'Freq', 'Dens']
 def color_analysis(
         image: np.ndarray,
         image_name: str,
-        output_directory_path: str) -> List[List[str]]:
+        output_directory_path: str,
+        plant_index: int = None) -> List[List[str]]:
     print(f"Analyzing colors in {image_name}")
     rows = []
     with open(join(output_directory_path, image_name + '.colors.csv'), 'w') as csv_file:
@@ -32,7 +33,7 @@ def color_analysis(
         for hex, freq in clusters.items():
             r, g, b = hex2rgb(hex)
             dens = freq / total
-            row = [image_name, hex, r, g, b, freq, dens]
+            row = [image_name, plant_index if plant_index is None else 1, hex, r, g, b, freq, dens]
             writer.writerow(row)
             rows.append(row)
 

@@ -15,13 +15,13 @@ def renormalize(image: np.ndarray) -> np.ndarray:
 
 def ilastik_classify(input_file_path: str, output_directory_path: str):
     command = f"/opt/ilastik/ilastik-1.4.0b21-gpu-Linux/run_ilastik.sh --headless " + \
-              "--project=\"/opt/pytcherplants/pytcherplants.ilp\" " + \
-              "--output_format=\"tiff\" " + \
-              f"--output_filename_format=\"{output_directory_path}/" + "{nickname}.segmented.tiff\" " + \
-              "--export_source=\"Simple Segmentation\"" + \
-              f" \"{input_file_path}\""
+              "--project=/opt/pytcherplants/pytcherplants.ilp " + \
+              "--output_format=tiff " + \
+              f"--output_filename_format={output_directory_path}/" + "{nickname}.segmented.tiff " + \
+              "--export_source='Simple Segmentation'" + \
+              f" {input_file_path}"
     print(f"Running command: {command}")
-    subprocess.run(command)
+    subprocess.run(command, shell=True)
 
 
 def postprocess(
