@@ -5,13 +5,14 @@ input=$1
 output=$2
 
 # ilastik pixel segmentation
-/opt/ilastik/ilastik-1.4.0b21-gpu-Linux/run_ilastik.sh --headless --project="/opt/pytcherplants/pytcherplants.ilp" --output_format="tiff" --output_filename_format="$output/{nickname}.segmented.tiff" --export_source="Simple Segmentation" "$input"
+pypl pixel_classification classify -i "$input" -o "$output"
+# /opt/ilastik/ilastik-1.4.0b21-gpu-Linux/run_ilastik.sh --headless --project="/opt/pytcherplants/pytcherplants.ilp" --output_format="tiff" --output_filename_format="$output/{nickname}.segmented.tiff" --export_source="Simple Segmentation" "$input"
 
 # postprocess ilastik pixel segmentation results
 base="$output/$(basename "$input" | rev | cut -d. -f2- | rev)"
 segmented="$base.segmented.tiff"
 echo "$segmented"
-pypl ilastik postpc -i "$input" -m "$segmented" -o "$output"
+pypl pixel_classification postprocess -i "$input" -m "$segmented" -o "$output"
 input="$base.masked.jpg"
 
 # geometric trait and color analysis from masked plant tissues

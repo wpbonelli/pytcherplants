@@ -1,7 +1,15 @@
+import csv
+import sys
+from heapq import nlargest
+from os.path import join
+from pathlib import Path
+from typing import List
+
+import numpy as np
+from cv2 import cv2
 
 
-
-def get_plants(
+def segment_plants(
         input_file_path: str,
         output_directory_path: str,
         count: int = None,
@@ -41,8 +49,10 @@ def get_plants(
     cv2.drawContours(masked_copy, contours, -1, 255, 3)
     div = 8
     keep = count if count is not None and count > 0 else 1
-    if keep == 1: min_area = sys.maxsize
-    else: min_area = min_area if min_area is not None and min_area > 0 else ((image.shape[0] / div) * (image.shape[1] / div))
+    if keep == 1:
+        min_area = sys.maxsize
+    else:
+        min_area = min_area if min_area is not None and min_area > 0 else ((image.shape[0] / div) * (image.shape[1] / div))
     largest = [c for c in nlargest(keep, contours, key=cv2.contourArea) if cv2.contourArea(c) > min_area]
     print(f"Found {len(largest)} plants (minimum area: {min_area} pixels)")
 

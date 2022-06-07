@@ -1,5 +1,6 @@
 from os.path import join
 from pathlib import Path
+import subprocess
 
 import numpy as np
 from cv2 import cv2
@@ -12,7 +13,18 @@ def renormalize(image: np.ndarray) -> np.ndarray:
     return img
 
 
-def postprocess_pixel_classification(
+def ilastik_classify(input_file_path: str, output_directory_path: str):
+    command = f"/opt/ilastik/ilastik-1.4.0b21-gpu-Linux/run_ilastik.sh --headless " + \
+              "--project=\"/opt/pytcherplants/pytcherplants.ilp\" " + \
+              "--output_format=\"tiff\" " + \
+              f"--output_filename_format=\"{output_directory_path}/" + "{nickname}.segmented.tiff\" " + \
+              "--export_source=\"Simple Segmentation\"" + \
+              f" \"{input_file_path}\""
+    print(f"Running command: {command}")
+    subprocess.run(command)
+
+
+def postprocess(
         input_file_path: str,
         mask_file_path: str,
         output_directory_path: str):

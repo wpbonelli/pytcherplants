@@ -1,8 +1,6 @@
 import csv
 from collections import Counter, OrderedDict
-from heapq import nlargest
 from os.path import join
-from pathlib import Path
 from typing import List, Tuple
 
 import cv2
@@ -15,7 +13,6 @@ from scipy.cluster.vq import kmeans2
 
 from pytcherplants.utils import rgb2hex, hue_to_rgb_formatted, hex2rgb, row_date, row_treatment, row_title, row_hsv
 
-
 RESULT_HEADERS = ['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'Freq', 'Dens']
 
 
@@ -27,19 +24,19 @@ def color_analysis(
     rows = []
     with open(join(output_directory_path, image_name + '.colors.csv'), 'w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(TRAITS_HEADERS)
+        writer.writerow(RESULT_HEADERS)
         image_copy = image.copy()
         rgb = cv2.cvtColor(image_copy, cv2.COLOR_BGR2RGB)
-        clusters, averaged = color_averaging(rgb, i)
+        clusters, averaged = color_averaging(rgb)
         total = sum(clusters.values())
         for hex, freq in clusters.items():
             r, g, b = hex2rgb(hex)
             dens = freq / total
-            row = [input_name, str(i), hex, r, g, b, freq, dens]
+            row = [image_name, hex, r, g, b, freq, dens]
             writer.writerow(row)
             rows.append(row)
 
-    return returns
+    return rows
 
 
 def rgb_analysis(data: pd.DataFrame, treatment: str, output_directory: str = '.'):
@@ -115,15 +112,15 @@ def hsv_analysis(data: pd.DataFrame, treatment: str, output_directory: str):
     fig.write_image(join(output_directory, treatment + '.hue.radial.png'))
 
 
-def color_averaging(image: np.ndarray, i: int, k: int = 15) -> Tuple[dict, np.ndarray]:
-    print(f"K-means color clustering for plant {i}, k = {k}...")
+def color_averaging(image: np.ndarray, k: int = 15) -> Tuple[dict, np.ndarray]:
+    print(f"K-means color clustering...")
     z = np.float32(image.reshape((-1, 3)))
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
     _, labels, centers = cv2.kmeans(z, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
     labels = labels.reshape((image.shape[:-1]))
     averaged = np.uint8(centers)[labels]
 
-    print(f"Removing unwanted hues from plant {i}")
+    print(f"Removing unwanted hues...")
     lower_blue = np.array([0, 38, 40])
     upper_blue = np.array([39, 255, 255])
     hsv = cv2.cvtColor(averaged, cv2.COLOR_RGB2HSV)
@@ -133,13 +130,13 @@ def color_averaging(image: np.ndarray, i: int, k: int = 15) -> Tuple[dict, np.nd
     counts = dict()
     for ii, cc in enumerate(centers):
         if all(c < 1 for c in cc):
-            print(f"Plant {i} color cluster {ii} is background, ignoring")
+            print(f"Cluster {ii} is background, ignoring")
             continue
 
         hex_code = rgb2hex(cc)
         mask = np.dstack([cv2.inRange(labels, ii, ii)] * 3)
         counts[hex_code] = len(np.nonzero(cv2.bitwise_and(filtered, mask))[0])
-        print(f"Plant {i} color cluster {ii}: {hex_code}")
+        print(f"Cluster {ii}: {hex_code}")
 
     return counts, filtered
 

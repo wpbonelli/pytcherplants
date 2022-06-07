@@ -1,4 +1,3 @@
-import csv
 from glob import glob
 from os.path import join
 from pathlib import Path
@@ -8,10 +7,9 @@ import matplotlib as mpl
 import pandas as pd
 from cv2 import cv2
 
-from pytcherplants.gpoints import detect_growth_point_labels, growth_point_labels_to_csv_format
-from pytcherplants.colors import RESULT_HEADERS, get_plants, color_analysis, cumulative_color_analysis
-from pytcherplants.utils import hex_to_hue_range
-from pytcherplants.ilastik import postprocess_pixel_classification
+from pytcherplants.segmentation import segment_plants
+from pytcherplants.colors import RESULT_HEADERS, color_analysis, cumulative_color_analysis
+import pytcherplants.pixel_classification as pc
 
 mpl.rcParams['figure.dpi'] = 300
 
@@ -22,15 +20,24 @@ def cli():
 
 
 @cli.group()
-def ilastik():
+def pixel_classification():
     pass
 
 
-@ilastik.command()
+@pixel_classification.command()
+@click.option('--input', '-i', required=True, type=str)
+@click.option('--output', '-o', required=True, type=str)
+def classify(input, output):
+    input_stem = Path(input).stem
+    print(f"Running Ilastik pixel classification on image {input_stem}")
+    pc.ilastik_classify(input, output)
+
+
+@pixel_classification.command()
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--mask', '-m', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
-def postpc(input, mask, output):
+def postprocess(input, mask, output):
     if not Path(input).is_file(): raise ValueError(f"Input must be a valid file path")
     if not Path(mask).is_file(): raise ValueError(f"Mask must be a valid file path")
     if not Path(output).is_dir(): raise ValueError(f"Output must be a valid directory path")
@@ -38,22 +45,70 @@ def postpc(input, mask, output):
     input_stem = Path(input).stem
     mask_stem = Path(mask).stem
     print(f"Post-processing Ilastik pixel classification image {input_stem} with mask {mask_stem}")
-    postprocess_pixel_classification(input, mask, output)
+    pc.postprocess(input, mask, output)
 
 
 @cli.group()
-def gpoints():
+def colors():
     pass
 
 
-@gpoints.group()
-def hull():
-    pass
+@colors.command()
+@click.option('--input', '-i', required=True, type=str)
+@click.option('--output', '-o', required=True, type=str)
+@click.option('--filetypes', '-p', multiple=True, type=str)
+@click.option('--count', '-c', required=False, type=int, default=1)
+@click.option('--min_area', '-m', required=False, type=int)
+def analyze(input, output, filetypes, count, min_area):
+    if Path(input).is_dir():
+        # get files of supported types (currently PNG and JPG)
+        if len(filetypes) == 0: filetypes = ['png', 'jpg']
+        extensions = [e for es in [[extension.lower(), extension.upper()] for extension in filetypes] for e in es]
+        patterns = [join(input, f"*.{p}") for p in extensions]
+        files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
+
+        print(f"Running individual color analysis...")
+        plants = {Path(file).stem: segment_plants(file, output, count, min_area) for file in files}
+        data = [r for rr in [color_analysis(name, output, pts) for name, pts, in plants.items()] for r in rr]
+
+        print(f"Running cumulative color analysis")
+        frame = pd.DataFrame(data, columns=RESULT_HEADERS)
+        cumulative_color_analysis(frame, output)
+    elif Path(input).is_file():
+        print(f"Running individual color analysis...")
+        data = []
+        if count == 1:
+            plant = segment_plants(input, output, 1, None)[0]
+            plant_name = Path(input).stem
+            data = color_analysis(plant, plant_name, output)
+            cv2.imwrite(f"{join(output, plant_name + '.png')}", plant.copy())
+        else:
+            plants = segment_plants(input, output, count, min_area)
+            for i, plant in enumerate(plants):
+                plant_name = Path(input).stem + '.' + str(i)
+                data = data + color_analysis(plant, plant_name, output)
+                cv2.imwrite(f"{join(output, plant_name + '.png')}", plant.copy())
+
+        print(f"Running cumulative color analysis...")
+        frame = pd.DataFrame(data, columns=RESULT_HEADERS)
+        cumulative_color_analysis(frame, output)
+    else:
+        raise ValueError(f"Invalid input path: {input}")
 
 
-@gpoints.group()
-def skel():
-    pass
+# @cli.group()
+# def growth_points():
+#     pass
+#
+#
+# @growth_points.group()
+# def hull():
+#     pass
+#
+#
+# @growth_points.group()
+# def skel():
+#     pass
 
 
 # @gpoints.group()
@@ -132,56 +187,6 @@ def skel():
 #
 #     # begin
 #     model.begin_training()
-
-
-@cli.group()
-def colors():
-    pass
-
-
-@colors.command()
-@click.option('--input', '-i', required=True, type=str)
-@click.option('--output', '-o', required=True, type=str)
-@click.option('--filetypes', '-p', multiple=True, type=str)
-@click.option('--count', '-c', required=False, type=int, default=1)
-@click.option('--min_area', '-m', required=False, type=int)
-def analyze(input, output, filetypes, count, min_area):
-    if Path(input).is_dir():
-        # get files of supported types (currently PNG and JPG)
-        if len(filetypes) == 0: filetypes = ['png', 'jpg']
-        extensions = [e for es in [[extension.lower(), extension.upper()] for extension in filetypes] for e in es]
-        patterns = [join(input, f"*.{p}") for p in extensions]
-        files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
-
-        print(f"Running individual color analysis...")
-        plants = {Path(file).stem: get_plants(file, output, count, min_area) for file in files}
-        data = [r for rr in [color_analysis(name, output, pts) for name, pts, in plants.items()] for r in rr]
-
-        print(f"Running cumulative color analysis")
-        frame = pd.DataFrame(data, columns=TRAITS_HEADERS)
-        cumulative_color_analysis(frame, output)
-    elif Path(input).is_file():
-        print(f"Running individual color analysis...")
-        data = []
-        if count == 1:
-            plant = get_plants(input, output, 1, None)[0]
-            plant_name = Path(input).stem
-            data = color_analysis(pot, plant_name, output)
-            cv2.imwrite(f"{join(output_directory_path, plant_name + '.png')}", plant.copy())
-            cv2.imwrite(f"{join(output_directory_path, plant_name + '.averaged.png')}", cv2.cvtColor(averaged, cv2.COLOR_RGB2BGR))
-        else:
-            plants = get_plants(input, output, count, min_area)
-            for i, plant in enumerate(plants):
-                plant_name = Path(input).stem + '.' + str(i)
-                data = data + color_analysis(pot, plant_name, output)
-                cv2.imwrite(f"{join(output_directory_path, plant_name + '.png')}", plant.copy())
-                cv2.imwrite(f"{join(output_directory_path, plant_name + '.averaged.png')}", cv2.cvtColor(averaged, cv2.COLOR_RGB2BGR))
-
-        print(f"Running cumulative color analysis...")
-        frame = pd.DataFrame(rows, columns=TRAITS_HEADERS)
-        cumulative_color_analysis(frame, output)
-    else:
-        raise ValueError(f"Invalid input path: {input}")
 
 
 if __name__ == '__main__':
