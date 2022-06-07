@@ -9,7 +9,7 @@ import pandas as pd
 from cv2 import cv2
 
 from pytcherplants.gpoints import detect_growth_point_labels, growth_point_labels_to_csv_format
-from pytcherplants.colors import TRAITS_HEADERS, get_pots, get_pot_traits, cumulative_color_analysis
+from pytcherplants.colors import RESULT_HEADERS, get_plants, color_analysis, cumulative_color_analysis
 from pytcherplants.utils import hex_to_hue_range
 from pytcherplants.ilastik import postprocess_pixel_classification
 
@@ -143,24 +143,43 @@ def colors():
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
-@click.option('--count', '-c', required=False, type=int, default=6)
+@click.option('--count', '-c', required=False, type=int, default=1)
 @click.option('--min_area', '-m', required=False, type=int)
 def analyze(input, output, filetypes, count, min_area):
     if Path(input).is_dir():
-        # by default, support PNGs and JPGs
+        # get files of supported types (currently PNG and JPG)
         if len(filetypes) == 0: filetypes = ['png', 'jpg']
         extensions = [e for es in [[extension.lower(), extension.upper()] for extension in filetypes] for e in es]
         patterns = [join(input, f"*.{p}") for p in extensions]
         files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
-        pots_by_image = {Path(file).stem: get_pots(file, output, count, min_area) for file in files}
-        rows = [get_pot_traits(image_name, output, image_pots) for image_name, image_pots in pots_by_image.items()]
-        rows = [r for rr in rows for r in rr]  # flatten 2d list to 1d
-        print(rows)
-        cumulative_color_analysis(pd.DataFrame(rows, columns=TRAITS_HEADERS), output)
+
+        print(f"Running individual color analysis...")
+        plants = {Path(file).stem: get_plants(file, output, count, min_area) for file in files}
+        data = [r for rr in [color_analysis(name, output, pts) for name, pts, in plants.items()] for r in rr]
+
+        print(f"Running cumulative color analysis")
+        frame = pd.DataFrame(data, columns=TRAITS_HEADERS)
+        cumulative_color_analysis(frame, output)
     elif Path(input).is_file():
-        image_pots = get_pots(input, output, count, min_area)
-        rows = get_pot_traits(Path(input).stem, output, image_pots)
-        cumulative_color_analysis(pd.DataFrame(rows, columns=TRAITS_HEADERS), output)
+        print(f"Running individual color analysis...")
+        data = []
+        if count == 1:
+            plant = get_plants(input, output, 1, None)[0]
+            plant_name = Path(input).stem
+            data = color_analysis(pot, plant_name, output)
+            cv2.imwrite(f"{join(output_directory_path, plant_name + '.png')}", plant.copy())
+            cv2.imwrite(f"{join(output_directory_path, plant_name + '.averaged.png')}", cv2.cvtColor(averaged, cv2.COLOR_RGB2BGR))
+        else:
+            plants = get_plants(input, output, count, min_area)
+            for i, plant in enumerate(plants):
+                plant_name = Path(input).stem + '.' + str(i)
+                data = data + color_analysis(pot, plant_name, output)
+                cv2.imwrite(f"{join(output_directory_path, plant_name + '.png')}", plant.copy())
+                cv2.imwrite(f"{join(output_directory_path, plant_name + '.averaged.png')}", cv2.cvtColor(averaged, cv2.COLOR_RGB2BGR))
+
+        print(f"Running cumulative color analysis...")
+        frame = pd.DataFrame(rows, columns=TRAITS_HEADERS)
+        cumulative_color_analysis(frame, output)
     else:
         raise ValueError(f"Invalid input path: {input}")
 
