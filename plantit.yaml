@@ -20,7 +20,7 @@ output:
       - csv
       - xlsx
 jobqueue:
-  walltime: "01:00:00"
+  walltime: "02:00:00"
   memory: "10GB"
   processes: 1
   cores: 1
