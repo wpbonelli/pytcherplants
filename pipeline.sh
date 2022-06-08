@@ -7,7 +7,7 @@ base="$output/$(basename "$input" | rev | cut -d. -f2- | rev)"
 
 pypl pixel_classification classify -i "$input" -o "$output"
 pypl pixel_classification postprocess -i "$input" -m "$base.segmented.tiff" -o "$output"
-pypl colors analyze -i "$base.masked.jpg" -o "$output"
+pypl colors analyze -i "$base.masked.jpg" -o "$output" -c "$COUNT" -m "$MIN_AREA"
 
 # TODO ilastik growth point counting
 # TODO ilastik pitcher counting
