@@ -46,23 +46,23 @@ def hue_to_rgb_formatted(k):
 
 
 def row_hsv(row):
-    hsv = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
-    return hsv[0], hsv[1], hsv[2]
+    h, s, v = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
+    return h, s, v
 
 
 def row_h(row):
-    hsv = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
-    return hsv[0]
+    h, s, v = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
+    return h
 
 
 def row_s(row):
-    hsv = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
-    return hsv[1]
+    h, s, v = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
+    return s
 
 
 def row_v(row):
-    hsv = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
-    return hsv[2]
+    h, s, v = rgb_to_hsv(float(row['R']), float(row['G']), float(row['B']))
+    return v
 
 
 def row_date(row):

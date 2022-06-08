@@ -7,6 +7,7 @@ import matplotlib as mpl
 import pandas as pd
 from cv2 import cv2
 
+from pytcherplants.utils import row_h, row_s, row_v, row_date, row_treatment, row_title, row_hsv
 from pytcherplants.segmentation import segment_plants
 from pytcherplants.colors import RESULT_HEADERS, color_analysis, cumulative_color_analysis
 import pytcherplants.pixel_classification as pc
@@ -69,13 +70,14 @@ def analyze(input, output, filetypes, count, min_area):
 
         print(f"Running individual color analysis...")
         plants = {Path(file).stem: segment_plants(file, output, count, min_area) for file in files}
-        data = []
-
         data = [r for rr in [color_analysis(name, output, pts) for name, pts, in plants.items()] for r in rr]
 
-        print(f"Running cumulative color analysis")
+        print(f"Constructing data frame")
         frame = pd.DataFrame(data, columns=RESULT_HEADERS)
+
+        print(f"Running cumulative color analysis")
         cumulative_color_analysis(frame, output)
+
     elif Path(input).is_file():
         print(f"Running individual color analysis...")
         data = []
@@ -91,9 +93,10 @@ def analyze(input, output, filetypes, count, min_area):
                 data = data + color_analysis(plant, plant_name, output)
                 cv2.imwrite(f"{join(output, plant_name + '.png')}", plant.copy())
 
-        print(f"Running cumulative color analysis...")
+        print(f"Constructing data frame")
         frame = pd.DataFrame(data, columns=RESULT_HEADERS)
-        print(frame)
+
+        print(f"Running cumulative color analysis...")
         cumulative_color_analysis(frame, output)
     else:
         raise ValueError(f"Invalid input path: {input}")

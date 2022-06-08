@@ -1,7 +1,7 @@
-import csv
 from collections import Counter, OrderedDict
 from os.path import join
 from typing import List, Tuple
+from colorsys import rgb_to_hsv
 
 import cv2
 import numpy as np
@@ -13,7 +13,7 @@ from scipy.cluster.vq import kmeans2
 
 from pytcherplants.utils import rgb2hex, hue_to_rgb_formatted, hex2rgb, row_date, row_treatment, row_title, row_hsv, row_h, row_s, row_v
 
-RESULT_HEADERS = ['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'Freq', 'Dens']
+RESULT_HEADERS = ['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'H', 'S', 'V', 'Freq', 'Dens']
 
 
 def color_analysis(
@@ -24,19 +24,16 @@ def color_analysis(
     print(f"Analyzing colors in {image_name}")
     rows = []
     with open(join(output_directory_path, image_name + '.colors.csv'), 'w') as csv_file:
-        writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(RESULT_HEADERS)
         image_copy = image.copy()
         rgb = cv2.cvtColor(image_copy, cv2.COLOR_BGR2RGB)
         clusters, averaged = color_averaging(rgb)
         total = sum(clusters.values())
         for hex, freq in clusters.items():
             r, g, b = hex2rgb(hex)
+            h, s, v = rgb_to_hsv(r, g, b)
             dens = freq / total
-            row = [image_name, plant_index if plant_index is None else 1, hex, r, g, b, freq, dens]
-            writer.writerow(row)
+            row = [image_name, plant_index if plant_index is None else 1, hex, r, g, b, h, s, v, freq, dens]
             rows.append(row)
-
     return rows
 
 
@@ -158,10 +155,7 @@ def cumulative_color_analysis(df: pd.DataFrame, output_directory_path: str):
     # drop rows with unknowns (indicating malformed image name)
     df.dropna(how='any', inplace=True)
 
-    # HSV color representation
-    df['H'] = df.apply(row_h, axis=1)
-    df['S'] = df.apply(row_s, axis=1)
-    df['V'] = df.apply(row_v, axis=1)
+    print(df)
 
     # color analysis for each treatment separately
     treatments = list(np.unique(df['Treatment']))
