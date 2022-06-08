@@ -58,7 +58,7 @@ def colors():
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
-@click.option('--count', '-c', required=False, type=int, default=1)
+@click.option('--count', '-c', required=False, type=int, default=0)
 @click.option('--min_area', '-m', required=False, type=int)
 def analyze(input, output, filetypes, count, min_area):
     if Path(input).is_dir():
@@ -68,35 +68,46 @@ def analyze(input, output, filetypes, count, min_area):
         patterns = [join(input, f"*.{p}") for p in extensions]
         files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
 
-        print(f"Running individual color analysis...")
-        plants = {Path(file).stem: segment_plants(file, output, count, min_area) for file in files}
-        data = [r for rr in [color_analysis(name, output, pts) for name, pts, in plants.items()] for r in rr]
+        if count > 0:
+            print(f"Segmenting plants...")
+            plants = {Path(file).stem: segment_plants(file, output, count, min_area) for file in files}
+            for name, plantss in plants.items():
+                for i, plant in enumerate(plantss):
+                    plant_name = Path(input).stem + '.' + str(i + 1)
+                    cv2.imwrite(f"{join(output, plant_name + '.png')}", plant.copy())
+        else:
+            plants = {Path(file).stem: cv2.imread(file) for file in files}
+
+        print(f"Running color analysis...")
+        data = [r for rr in [color_analysis(name, output, plant) for name, plant, in plants.items()] for r in rr]
 
         print(f"Constructing data frame")
         frame = pd.DataFrame(data, columns=RESULT_HEADERS)
 
-        print(f"Running cumulative color analysis")
+        print(f"Running cumulative analysis")
         cumulative_color_analysis(frame, output)
 
     elif Path(input).is_file():
-        print(f"Running individual color analysis...")
         data = []
-        if count == 1:
-            plant = segment_plants(input, output, 1, None)[0]
-            plant_name = Path(input).stem
-            data = color_analysis(plant, plant_name, output)
-            cv2.imwrite(f"{join(output, plant_name + '.png')}", plant.copy())
-        else:
+
+        print(f"Segmenting plants...")
+        if count > 0:
+            print(f"Running color analysis...")
             plants = segment_plants(input, output, count, min_area)
             for i, plant in enumerate(plants):
-                plant_name = Path(input).stem + '.' + str(i)
+                plant_name = Path(input).stem + '.' + str(i + 1)
                 data = data + color_analysis(plant, plant_name, output)
                 cv2.imwrite(f"{join(output, plant_name + '.png')}", plant.copy())
+        else:
+            print(f"Running color analysis...")
+            plant = cv2.imread(input)
+            plant_name = Path(input).stem
+            data = color_analysis(plant, plant_name, output)
 
         print(f"Constructing data frame")
         frame = pd.DataFrame(data, columns=RESULT_HEADERS)
 
-        print(f"Running cumulative color analysis...")
+        print(f"Running cumulative analysis...")
         cumulative_color_analysis(frame, output)
     else:
         raise ValueError(f"Invalid input path: {input}")

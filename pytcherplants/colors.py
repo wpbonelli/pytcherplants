@@ -24,8 +24,7 @@ def color_analysis(
     print(f"Analyzing colors in {image_name}")
     rows = []
     with open(join(output_directory_path, image_name + '.colors.csv'), 'w') as csv_file:
-        image_copy = image.copy()
-        rgb = cv2.cvtColor(image_copy, cv2.COLOR_BGR2RGB)
+        rgb = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
         clusters, averaged = color_averaging(rgb)
         total = sum(clusters.values())
         for hex, freq in clusters.items():
