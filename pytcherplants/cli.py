@@ -93,6 +93,7 @@ def analyze(input, output, filetypes, count, min_area):
 
         print(f"Running cumulative color analysis...")
         frame = pd.DataFrame(data, columns=RESULT_HEADERS)
+        print(frame)
         cumulative_color_analysis(frame, output)
     else:
         raise ValueError(f"Invalid input path: {input}")

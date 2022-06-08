@@ -50,7 +50,7 @@ def segment_plants(
     div = 8
     keep = count if count is not None and count > 0 else 1
     if keep == 1:
-        min_area = sys.maxsize
+        min_area = 1
     else:
         min_area = min_area if min_area is not None and min_area > 0 else ((image.shape[0] / div) * (image.shape[1] / div))
     largest = [c for c in nlargest(keep, contours, key=cv2.contourArea) if cv2.contourArea(c) > min_area]

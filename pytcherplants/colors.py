@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from plotly import graph_objects as go, express as px
 from scipy.cluster.vq import kmeans2
 
-from pytcherplants.utils import rgb2hex, hue_to_rgb_formatted, hex2rgb, row_date, row_treatment, row_title, row_hsv
+from pytcherplants.utils import rgb2hex, hue_to_rgb_formatted, hex2rgb, row_date, row_treatment, row_title, row_hsv, row_h, row_s, row_v
 
 RESULT_HEADERS = ['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'Freq', 'Dens']
 
@@ -159,7 +159,9 @@ def cumulative_color_analysis(df: pd.DataFrame, output_directory_path: str):
     df.dropna(how='any', inplace=True)
 
     # HSV color representation
-    df['H'], df['S'], df['V'] = zip(*df.apply(row_hsv, axis=1))
+    df['H'] = df.apply(row_h, axis=1)
+    df['S'] = df.apply(row_s, axis=1)
+    df['V'] = df.apply(row_v, axis=1)
 
     # color analysis for each treatment separately
     treatments = list(np.unique(df['Treatment']))
