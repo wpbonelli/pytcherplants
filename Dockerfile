@@ -15,7 +15,7 @@ RUN apt-get update && \
     libgtk2.0-dev \
     git
 
-RUN pip install --upgrade pip && \
+RUN pip install --upgrade pip setuptools wheel && \
     pip install -r /opt/pytcherplants/requirements.txt && \
     pip install -e /opt/pytcherplants
 
