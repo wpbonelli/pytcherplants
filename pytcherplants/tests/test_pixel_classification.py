@@ -1,7 +1,7 @@
 from tempfile import TemporaryDirectory
 
 import numpy as np
-from cv2 import cv2
+import cv2
 
 import pytcherplants.pixel_classification as pc
 

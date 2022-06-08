@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List
 
 import numpy as np
-from cv2 import cv2
+import cv2
 
 
 def segment_plants(

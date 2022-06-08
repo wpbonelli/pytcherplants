@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import matplotlib as mpl
 import pandas as pd
-from cv2 import cv2
+import cv2
 
 from pytcherplants.utils import row_h, row_s, row_v, row_date, row_treatment, row_title, row_hsv
 from pytcherplants.segmentation import segment_plants

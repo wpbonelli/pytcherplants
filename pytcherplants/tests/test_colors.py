@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 from tempfile import TemporaryDirectory
 
-from cv2 import cv2
+import cv2
 
 from pytcherplants.colors import RESULT_HEADERS, color_analysis, cumulative_color_analysis
 

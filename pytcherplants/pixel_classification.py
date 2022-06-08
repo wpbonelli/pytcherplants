@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 
 import numpy as np
-from cv2 import cv2
+import cv2
 
 
 def renormalize(image: np.ndarray) -> np.ndarray:
