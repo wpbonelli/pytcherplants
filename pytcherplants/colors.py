@@ -126,7 +126,8 @@ def color_averaging(image: np.ndarray, k: int = 15) -> Tuple[dict, np.ndarray]:
 
     counts = dict()
     for ii, cc in enumerate(centers):
-        if all(c < 1 for c in cc):
+        # ignore black or white background
+        if all(c < 1 for c in cc) or all(c > 254 for c in cc):
             print(f"Cluster {ii} is background, ignoring")
             continue
 
