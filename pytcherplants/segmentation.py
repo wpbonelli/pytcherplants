@@ -1,5 +1,3 @@
-import csv
-import sys
 from heapq import nlargest
 from os.path import join
 from pathlib import Path
@@ -10,26 +8,26 @@ import cv2
 
 
 def segment_plants(
-        input_file_path: str,
-        output_directory_path: str,
+        image_path: str,
+        output_path: str,
         count: int = None,
         min_area: int = None) -> List[np.ndarray]:
     """
     Segment plants from background pixels.
-    Produces a CSV file containing plant dimensions and PNG images of each cropped out of the original image.
+    Produces a CSV file containing plant dimensions and PNG groups of each cropped out of the original image.
 
-    :param input_file_path: The path to the image file
-    :param output_directory_path: The output directory path
+    :param image_path: The path to the image file
+    :param output_path: The output directory path
     :param count: The number of plants in the image (automatically detected if not provided)
     :param min_area: The minimum plant area
     :return The cropped plant regions
     """
 
-    print(f"Looking for {count} plants with minimum area {min_area}")
-    input_file_stem = Path(input_file_path).stem
+    print(f"Looking for {count} plants with minimum area {min_area} in {image_path}")
+    input_file_stem = Path(image_path).stem
 
     print(f"Applying Gaussian blur")
-    image = cv2.imread(input_file_path)
+    image = cv2.imread(image_path)
     blurred = cv2.blur(image, (25, 25))
     blurred = cv2.GaussianBlur(blurred, (11, 75), cv2.BORDER_DEFAULT)
 
@@ -56,18 +54,16 @@ def segment_plants(
     largest = [c for c in nlargest(keep, contours, key=cv2.contourArea) if cv2.contourArea(c) > min_area]
     print(f"Found {len(largest)} plants (minimum area: {min_area} pixels)")
 
-    print(f"Cropping images and saving dimensions")
+    print(f"Cropping contours")
     plants = []
-    with open(join(output_directory_path, input_file_stem + '.plants.csv'), 'w') as csv_file:
-        writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(['Image', 'Plant', 'Height', 'Width'])
-        for i, c in enumerate(largest):
-            x, y, w, h = cv2.boundingRect(c)
-            writer.writerow([input_file_stem, str(i + 1), str(h), str(w)])
-            plant = masked.copy()
-            plants.append(plant[y:y + h, x:x + w])
-            cv2.rectangle(masked_copy, (x, y), (x + w, y + h), (36, 255, 12), 3)
-            cv2.putText(masked_copy, f"plant {i + 1}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (36, 255, 12), 3)
+    for i, c in enumerate(largest):
+        x, y, w, h = cv2.boundingRect(c)
+        plant = masked.copy()
+        plants.append(plant[y:y + h, x:x + w])
+        cv2.rectangle(masked_copy, (x, y), (x + w, y + h), (36, 255, 12), 3)
+        cv2.putText(masked_copy, f"plant {i + 1}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (36, 255, 12), 3)
 
-    cv2.imwrite(join(output_directory_path, input_file_stem + '.plants.png'), masked_copy)
+    print(f"Saving labelled image")
+    cv2.imwrite(join(output_path, input_file_stem + '.plants.png'), masked_copy)
+
     return plants

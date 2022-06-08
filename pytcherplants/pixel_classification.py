@@ -13,7 +13,7 @@ def renormalize(image: np.ndarray) -> np.ndarray:
     return img
 
 
-def ilastik_classify(input_file_path: str, output_directory_path: str):
+def classify(input_file_path: str, output_directory_path: str):
     command = f"/opt/ilastik/ilastik-1.4.0b21-gpu-Linux/run_ilastik.sh --headless " + \
               "--project=/opt/pytcherplants/pytcherplants.ilp " + \
               "--output_format=tiff " + \

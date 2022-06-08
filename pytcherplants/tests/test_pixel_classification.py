@@ -5,14 +5,14 @@ import cv2
 
 import pytcherplants.pixel_classification as pc
 
-input_path = 'samples/raw/1_14_19.10_30_20.5V4B3121.JPG'  # original image
-imask_path = 'samples/masks/raw/1_14_19.10_30_20.5V4B3121_segmented.tiff'  # before post-processing
-pmask_path = 'samples/masks/raw/1_14_19.10_30_20.5V4B3121_masked.jpg'  # after post-processing
+input_path = 'samples/groups/1_14_19.10_30_20.5V4B3121.jpg'  # original image
+imask_path = 'samples/masks/groups/1_14_19.10_30_20.5V4B3121_segmented.tiff'  # before post-processing
+pmask_path = 'samples/masks/groups/1_14_19.10_30_20.5V4B3121_masked.jpg'  # after post-processing
 
 
 def test_ilastik_classify():
     with TemporaryDirectory() as output_path:
-        classified = pc.ilastik_classify(input_path, output_path)
+        classified = pc.classify(input_path, output_path)
         imask = cv2.imread(imask_path)
         # for now, just look at the output manually to make sure it's working
 

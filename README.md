@@ -159,7 +159,7 @@ python pytcher_plants/cli.py colors analyze -i <input file or directory> -o <out
 A command is provided to detect manually labeled growth points, find their coordinates, and write them to CSV for ingestion into a [heatmap-based counting dataset for use with a model trained with Deep Plant Phenomics](https://deep-plant-phenomics.readthedocs.io/en/latest/Loaders/#load-heatmap-based-counting-dataset-from-directory). For instance, the following will produce the `labels.csv` file included in `data/labels/growth_points`, run on the images included in that folder:
 
 ```shell
-python pytcher_plants/base.py gpoints load_labels -i <input file or directory> -o <output directory> -c '#ea57f5'
+python pytcher_plants/base.py growth_points load_labels -i <input file or directory> -o <output directory> -c '#ea57f5'
 ```
 
 TODO: train command

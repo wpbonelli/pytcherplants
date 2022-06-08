@@ -1,16 +1,18 @@
-from glob import glob
+from colorsys import rgb_to_hsv
 from os.path import join
 from pathlib import Path
 
 import click
+import cv2
 import matplotlib as mpl
 import pandas as pd
-import cv2
 
-from pytcherplants.utils import row_h, row_s, row_v, row_date, row_treatment, row_title, row_hsv
-from pytcherplants.segmentation import segment_plants
-from pytcherplants.colors import RESULT_HEADERS, color_analysis, cumulative_color_analysis
+import pytcherplants.color_analysis as ca
 import pytcherplants.pixel_classification as pc
+from pytcherplants.clustering import get_clusters
+from pytcherplants.color_analysis import HEADERS
+from pytcherplants.segmentation import segment_plants
+from pytcherplants.utils import hex2rgb
 
 mpl.rcParams['figure.dpi'] = 300
 
@@ -29,9 +31,12 @@ def pixel_classification():
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 def classify(input, output):
+    if not Path(input).is_file(): raise ValueError(f"Input must be a valid file path")
+    if not Path(output).is_dir(): raise ValueError(f"Output must be a valid directory path")
+
     input_stem = Path(input).stem
     print(f"Running Ilastik pixel classification on image {input_stem}")
-    pc.ilastik_classify(input, output)
+    pc.classify(input, output)
 
 
 @pixel_classification.command()
@@ -45,72 +50,32 @@ def postprocess(input, mask, output):
 
     input_stem = Path(input).stem
     mask_stem = Path(mask).stem
-    print(f"Post-processing Ilastik pixel classification image {input_stem} with mask {mask_stem}")
+    print(f"Post-processing Ilastik pixel classification for image {input_stem} with mask {mask_stem}")
     pc.postprocess(input, mask, output)
 
 
-@cli.group()
-def colors():
-    pass
-
-
-@colors.command()
+@cli.command()
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
 @click.option('--count', '-c', required=False, type=int, default=0)
 @click.option('--min_area', '-m', required=False, type=int)
-def analyze(input, output, filetypes, count, min_area):
-    if Path(input).is_dir():
-        # get files of supported types (currently PNG and JPG)
-        if len(filetypes) == 0: filetypes = ['png', 'jpg']
-        extensions = [e for es in [[extension.lower(), extension.upper()] for extension in filetypes] for e in es]
-        patterns = [join(input, f"*.{p}") for p in extensions]
-        files = sorted([f for fs in [glob(pattern) for pattern in patterns] for f in fs])
+def color_analysis(input, output, filetypes, count, min_area):
+    output_path = Path(output)
+    if not output_path.is_dir(): raise ValueError(f"Output must be a valid directory path")
 
-        if count > 0:
-            print(f"Segmenting plants...")
-            plants = {Path(file).stem: segment_plants(file, output, count, min_area) for file in files}
-            for name, plantss in plants.items():
-                for i, plant in enumerate(plantss):
-                    plant_name = Path(input).stem + '.' + str(i + 1)
-                    cv2.imwrite(f"{join(output, plant_name + '.png')}", plant.copy())
-        else:
-            plants = {Path(file).stem: cv2.imread(file) for file in files}
-
-        print(f"Running color analysis...")
-        data = [r for rr in [color_analysis(name, output, plant) for name, plant, in plants.items()] for r in rr]
-
-        print(f"Constructing data frame")
-        frame = pd.DataFrame(data, columns=RESULT_HEADERS)
-
-        print(f"Running cumulative analysis")
-        cumulative_color_analysis(frame, output)
-
-    elif Path(input).is_file():
-        data = []
-
-        print(f"Segmenting plants...")
-        if count > 0:
-            print(f"Running color analysis...")
-            plants = segment_plants(input, output, count, min_area)
-            for i, plant in enumerate(plants):
-                plant_name = Path(input).stem + '.' + str(i + 1)
-                data = data + color_analysis(plant, plant_name, output)
-                cv2.imwrite(f"{join(output, plant_name + '.png')}", plant.copy())
-        else:
-            print(f"Running color analysis...")
-            plant = cv2.imread(input)
-            plant_name = Path(input).stem
-            data = color_analysis(plant, plant_name, output)
-
-        print(f"Constructing data frame")
-        frame = pd.DataFrame(data, columns=RESULT_HEADERS)
-
-        print(f"Running cumulative analysis...")
-        cumulative_color_analysis(frame, output)
+    input_path = Path(input)
+    input_name = input_path.stem
+    if input_path.is_dir():
+        print(f"Performing color analysis for directory {input_name}")
+        df = ca.analyze_directory(input, output, filetypes, count, min_area)
+        df.to_csv(join(output, f"{input_name}.colors.csv"))
+    elif input_path.is_file():
+        print(f"Performing color analysis for image {input_name}")
+        df = ca.analyze_file(input, output, count, min_area)
+        df.to_csv(join(output, f"{input_name}.colors.csv"))
     else:
-        raise ValueError(f"Invalid input path: {input}")
+        raise ValueError(f"Invalid input path: {input_path}")
 
 
 # @cli.group()
@@ -128,7 +93,7 @@ def analyze(input, output, filetypes, count, min_area):
 #     pass
 
 
-# @gpoints.group()
+# @growth_points.group()
 # def cnn():
 #     pass
 
@@ -170,8 +135,8 @@ def analyze(input, output, filetypes, count, min_area):
 
 # @cnn.command()
 # @click.option('--labels', '-l', required=True, type=str)
-# @click.option('--images', '-i', required=True, type=str)
-# def train(labels, images):
+# @click.option('--groups', '-i', required=True, type=str)
+# def train(labels, groups):
 #     """
 #     Trains a convolutional neural network model for density estimation of growth points.
 #
@@ -179,7 +144,7 @@ def analyze(input, output, filetypes, count, min_area):
 #         https://deep-plant-phenomics.readthedocs.io/en/latest/Tutorial-Object-Counting-with-Heatmaps/
 #
 #     :param labels: The label file path (CSV format: image name, x1, y1, x2, y2, ...)
-#     :param images: The image directory path
+#     :param groups: The image directory path
 #     """
 #
 #     channels = 3  # RGB
@@ -193,7 +158,7 @@ def analyze(input, output, filetypes, count, min_area):
 #
 #     # load dataset
 #     model.set_density_map_sigma(4.0)
-#     model.load_heatmap_dataset_with_csv_from_directory(images, Path(labels).name)
+#     model.load_heatmap_dataset_with_csv_from_directory(groups, Path(labels).name)
 #
 #     # define architecture
 #     model.add_input_layer()

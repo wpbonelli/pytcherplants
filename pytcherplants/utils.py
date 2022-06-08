@@ -70,7 +70,7 @@ def row_date(row):
     split = image.split('.')
     if len(split) < 3:
         print(f"Malformed image name (expected date.treatment.name.ext)")
-        return np.NaN
+        return np.NaN  # return NaN to allow use with .apply()
     else:
         date = split[0]
         return date
@@ -81,18 +81,18 @@ def row_treatment(row):
     split = image.split('.')
     if len(split) < 3:
         print(f"Malformed image name (expected date.treatment.name.ext)")
-        return np.NaN
+        return np.NaN  # return NaN to allow use with .apply()
     else:
         treatment = split[1]
         return treatment
 
 
-def row_title(row):
+def row_name(row):
     image = row['Image']
     split = image.split('.')
     if len(split) < 3:
         print(f"Malformed image name (expected date.treatment.name.ext)")
-        return np.NaN
+        return np.NaN  # return NaN to allow use with .apply()
     else:
         title = split[2]
         return title

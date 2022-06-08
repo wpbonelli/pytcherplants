@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name='pytcherplants',
     version='0.0.1',
-    description='pitcher geometry & color analysis for top-down images of Sarracenia ',
+    description='pitcher geometry & color analysis for top-down groups of Sarracenia ',
     long_description=long_description,
     long_description_content_type="text/markdown",
     author='Wes Bonelli',
