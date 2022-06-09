@@ -1,0 +1,26 @@
+name: "Sarracenia: Pixel Classification"
+author: "Mason McNair"
+public: False
+image: docker://wbonelli/pytcherplants
+commands: pypl classify -i $INPUT -o $OUTPUT
+input:
+  kind: files
+  filetypes:
+    - tif
+    - tiff
+    - jpg
+    - png
+output:
+  path:
+  include:
+    patterns:
+      - tif
+      - tiff
+      - png
+      - csv
+      - xlsx
+jobqueue:
+  walltime: "02:00:00"
+  memory: "10GB"
+  processes: 1
+  cores: 1
