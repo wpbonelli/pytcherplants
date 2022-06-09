@@ -46,14 +46,14 @@ def segment(input, output, count, min_area):
     print(f"Segmenting plants in image {input_stem}")
     plants, labelled = segment_plants(input, count, min_area)
     cv2.imwrite(join(output, input_stem + '.plants.png'), labelled)
-    for i, plant in enumerate(plants): cv2.imwrite(join(output, input_stem + f".plant.{i}.png"), plant)
+    for i, plant in enumerate(plants): cv2.imwrite(join(output, input_stem + f".plant.{str(i + 1)}.png"), plant)
 
 
 @cli.command()
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
-def analyze(input, output, filetypes, count, min_area):
+def analyze(input, output, filetypes):
     output_path = Path(output)
     if not output_path.is_dir(): raise ValueError(f"Output must be a valid directory path")
 

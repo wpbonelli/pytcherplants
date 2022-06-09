@@ -9,20 +9,25 @@ Trait and color analysis for top-down images of pitcher plants, built with [ilas
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Project layout](#project-layout)
-- [Approach](#approach)
-- [Setting up a development environment](#setting-up-a-development-environment)
-  - [Requirements](#requirements)
-  - [Installing dependencies](#installing-dependencies)
-    - [venv](#venv)
-    - [Anaconda](#anaconda)
-    - [Docker](#docker)
-  - [Running the code](#running-the-code)
-    - [Jupyter notebooks](#jupyter-notebooks)
-    - [Python CLI](#python-cli)
-      - [Processing (image analysis)](#processing-image-analysis)
-      - [Post-processing (aggregations)](#post-processing-aggregations)
-      - [Detecting growth point labels](#detecting-growth-point-labels)
+
+- [About](#about)
+  - [Layout](#layout)
+  - [References](#references)
+- [Installation](#installation)
+  - [Using Docker](#using-docker)
+  - [Using Singularity](#using-singularity)
+  - [Installing the Python package](#installing-the-python-package)
+  - [Setting up a development environment](#setting-up-a-development-environment)
+    - [Developing with Docker](#developing-with-docker)
+    - [Using a virtual Python environment](#using-a-virtual-python-environment)
+      - [`venv`](#venv)
+      - [Anaconda](#anaconda)
+- [Usage](#usage)
+  - [Image name format](#image-name-format)
+  - [Commands](#commands)
+    - [Pixel classification](#pixel-classification)
+    - [Plant segmentation](#plant-segmentation)
+    - [Color analysis](#color-analysis)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

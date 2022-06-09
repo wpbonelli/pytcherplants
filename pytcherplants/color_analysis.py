@@ -11,7 +11,7 @@ import pandas as pd
 from pytcherplants.clustering import get_clusters
 from pytcherplants.utils import hex2rgb
 
-HEADERS = ['Image', 'Plant', 'Hex', 'R', 'G', 'B', 'H', 'S', 'V', 'Freq', 'Dens']
+HEADERS = ['Image', 'Hex', 'R', 'G', 'B', 'H', 'S', 'V', 'Freq', 'Dens']
 
 
 def analyze_directory(
@@ -41,10 +41,10 @@ def analyze_file(image_path: str):
 
 
 def analyze_image(image: np.ndarray, name: str) -> List[List[str]]:
-    rows = []
     rgb = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2RGB)
-    clusters, averaged = get_clusters(rgb)
+    clusters = get_clusters(rgb)
     total = sum(clusters.values())
+    rows = []
 
     for hex, freq in clusters.items():
         r, g, b = hex2rgb(hex)
