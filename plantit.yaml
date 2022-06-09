@@ -1,10 +1,17 @@
-name: "Sarracenia: Pixel Classification"
+name: "Sarracenia: Color Analysis"
 author: "Mason McNair"
 public: False
 image: docker://wbonelli/pytcherplants
-commands: pypl classify -i $INPUT -o $OUTPUT
+commands: pypl analyze -i $INPUT -o $OUTPUT -k $CLUSTERS
+params:
+  - name: clusters
+    type: number
+    default: 10
+    step: 1
+    min: 2
+    max: 50
 input:
-  kind: files
+  kind: directory
   filetypes:
     - tif
     - tiff
@@ -16,9 +23,9 @@ output:
     patterns:
       - tif
       - tiff
+      - jpg
       - png
       - csv
-      - xlsx
 jobqueue:
   walltime: "02:00:00"
   memory: "10GB"
