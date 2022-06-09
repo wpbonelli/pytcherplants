@@ -1,15 +1,12 @@
 from heapq import nlargest
-from os.path import join
-from pathlib import Path
 from typing import List
 
-import numpy as np
 import cv2
+import numpy as np
 
 
 def segment_plants(
         image_path: str,
-        output_path: str,
         count: int = None,
         min_area: int = None) -> List[np.ndarray]:
     """
@@ -17,14 +14,12 @@ def segment_plants(
     Produces a CSV file containing plant dimensions and PNG groups of each cropped out of the original image.
 
     :param image_path: The path to the image file
-    :param output_path: The output directory path
     :param count: The number of plants in the image (automatically detected if not provided)
     :param min_area: The minimum plant area
-    :return The cropped plant regions
+    :return The cropped plant images
     """
 
     print(f"Looking for {count} plants with minimum area {min_area} in {image_path}")
-    input_file_stem = Path(image_path).stem
 
     print(f"Applying Gaussian blur")
     image = cv2.imread(image_path)
@@ -41,10 +36,10 @@ def segment_plants(
     masked = cv2.bitwise_and(image, image, mask=dilated)
 
     print(f"Detecting contours")
-    masked_copy = masked.copy()
+    labelled = masked.copy()
     _, thresh = cv2.threshold(mask, 40, 255, 0)
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(masked_copy, contours, -1, 255, 3)
+    cv2.drawContours(labelled, contours, -1, 255, 3)
     div = 8
     keep = count if count is not None and count > 0 else 1
     if keep == 1:
@@ -60,10 +55,7 @@ def segment_plants(
         x, y, w, h = cv2.boundingRect(c)
         plant = masked.copy()
         plants.append(plant[y:y + h, x:x + w])
-        cv2.rectangle(masked_copy, (x, y), (x + w, y + h), (36, 255, 12), 3)
-        cv2.putText(masked_copy, f"plant {i + 1}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (36, 255, 12), 3)
+        cv2.rectangle(labelled, (x, y), (x + w, y + h), (36, 255, 12), 3)
+        cv2.putText(labelled, f"plant {i + 1}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 3.0, (36, 255, 12), 3)
 
-    print(f"Saving labelled image")
-    cv2.imwrite(join(output_path, input_file_stem + '.plants.png'), masked_copy)
-
-    return plants
+    return plants, labelled

@@ -1,18 +1,13 @@
-from colorsys import rgb_to_hsv
 from os.path import join
 from pathlib import Path
 
 import click
 import cv2
 import matplotlib as mpl
-import pandas as pd
+from pytcherplants.segmentation import segment_plants
 
 import pytcherplants.color_analysis as ca
 import pytcherplants.pixel_classification as pc
-from pytcherplants.clustering import get_clusters
-from pytcherplants.color_analysis import HEADERS
-from pytcherplants.segmentation import segment_plants
-from pytcherplants.utils import hex2rgb
 
 mpl.rcParams['figure.dpi'] = 300
 
@@ -22,12 +17,7 @@ def cli():
     pass
 
 
-@cli.group()
-def pixel_classification():
-    pass
-
-
-@pixel_classification.command()
+@cli.command()
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 def classify(input, output):
@@ -36,31 +26,34 @@ def classify(input, output):
 
     input_stem = Path(input).stem
     print(f"Running Ilastik pixel classification on image {input_stem}")
-    pc.classify(input, output)
+    mask, masked = pc.classify(input, output)
+    cv2.imwrite(join(output, f"{input_stem}.mask.jpg"), mask)
+    cv2.imwrite(join(output, f"{input_stem}.masked.jpg"), masked)
 
 
-@pixel_classification.command()
+@cli.command()
 @click.option('--input', '-i', required=True, type=str)
-@click.option('--mask', '-m', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
-def postprocess(input, mask, output):
+@click.option('--count', '-c', required=False, type=int, default=1)
+@click.option('--min_area', '-m', required=False, type=int, default=None)
+def segment(input, output, count, min_area):
     if not Path(input).is_file(): raise ValueError(f"Input must be a valid file path")
-    if not Path(mask).is_file(): raise ValueError(f"Mask must be a valid file path")
     if not Path(output).is_dir(): raise ValueError(f"Output must be a valid directory path")
+    if count < 1: raise ValueError(f"Count must be greater than or equal to 1")
+    if min_area is not None and min_area < 10: raise ValueError(f"Minimum area must be greater than or equal to 10")
 
     input_stem = Path(input).stem
-    mask_stem = Path(mask).stem
-    print(f"Post-processing Ilastik pixel classification for image {input_stem} with mask {mask_stem}")
-    pc.postprocess(input, mask, output)
+    print(f"Segmenting plants in image {input_stem}")
+    plants, labelled = segment_plants(input, count, min_area)
+    cv2.imwrite(join(output, input_stem + '.plants.png'), labelled)
+    for i, plant in enumerate(plants): cv2.imwrite(join(output, input_stem + f".plant.{i}.png"), plant)
 
 
 @cli.command()
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
-@click.option('--count', '-c', required=False, type=int, default=0)
-@click.option('--min_area', '-m', required=False, type=int)
-def color_analysis(input, output, filetypes, count, min_area):
+def analyze(input, output, filetypes, count, min_area):
     output_path = Path(output)
     if not output_path.is_dir(): raise ValueError(f"Output must be a valid directory path")
 
@@ -68,11 +61,11 @@ def color_analysis(input, output, filetypes, count, min_area):
     input_name = input_path.stem
     if input_path.is_dir():
         print(f"Performing color analysis for directory {input_name}")
-        df = ca.analyze_directory(input, output, filetypes, count, min_area)
+        df = ca.analyze_directory(input, filetypes)
         df.to_csv(join(output, f"{input_name}.colors.csv"))
     elif input_path.is_file():
         print(f"Performing color analysis for image {input_name}")
-        df = ca.analyze_file(input, output, count, min_area)
+        df = ca.analyze_file(input)
         df.to_csv(join(output, f"{input_name}.colors.csv"))
     else:
         raise ValueError(f"Invalid input path: {input_path}")
