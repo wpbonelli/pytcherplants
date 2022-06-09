@@ -40,9 +40,19 @@ def hue_to_rgb(hue):
     return float(r), float(g), float(b)
 
 
+def hue_to_bgr(hue):
+    r, g, b = hsv_to_rgb(hue, 0.7, 0.7)
+    return float(b), float(g), float(r)
+
+
 def hue_to_rgb_formatted(k):
     r, g, b = hue_to_rgb(float(k / 360))
     return f"rgb({int(r * 256)},{int(g * 256)},{int(b * 256)})"
+
+
+def hue_to_bgr_formatted(k):
+    b, g, r = hue_to_bgr(float(k / 360))
+    return f"bgr({int(b * 256)},{int(g * 256)},{int(r * 256)})"
 
 
 def row_hsv(row):

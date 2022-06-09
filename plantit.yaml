@@ -1,10 +1,17 @@
-name: "Sarracenia: Segmentation"
+name: "Sarracenia: Color Analysis"
 author: "Mason McNair"
 public: False
 image: docker://wbonelli/pytcherplants
-commands: pypl segment -i $INPUT -o $OUTPUT
+commands: pypl analyze -i $INPUT -o $OUTPUT -k $CLUSTERS
+params:
+  - name: clusters
+    type: number
+    default: 10
+    step: 1
+    min: 2
+    max: 50
 input:
-  kind: files
+  kind: directory
   filetypes:
     - tif
     - tiff
@@ -18,6 +25,7 @@ output:
       - tiff
       - jpg
       - png
+      - csv
 jobqueue:
   walltime: "02:00:00"
   memory: "10GB"
