@@ -15,12 +15,12 @@ plant_masked_path = 'samples/plants/1_14_19.10_30_20.p001.masked.jpg'
 def test_classify():
     with TemporaryDirectory() as output_path:
         runner = CliRunner()
-        runner.invoke(cli.classify, ['-i', group_path, '-o', output_path])
+        runner.invoke(cli.classify, ['-i', plant_path, '-o', output_path])
 
         results = listdir(output_path)
         assert len(results) == 3
 
-        stem = Path(plant_masked_path).stem
+        stem = Path(plant_path).stem
         assert f"{stem}.mask.jpg" in results
         assert f"{stem}.masked.jpg" in results
         assert f"{stem}.segmented.tiff" in results
