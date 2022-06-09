@@ -30,6 +30,10 @@ jobs:
           cd /opt/ilastik
           curl -O https://files.ilastik.org/ilastik-1.4.0b21-gpu-Linux.tar.bz2
           tar xjf ilastik-1.*-Linux.tar.bz2
+
+          # move ilastik model file into expected position
+          mkdir /opt/pytcherplants
+          cp /home/runner/work/pytcherplants/pytcherplants/pytcherplants.ilp /opt/pytcherplants/pytcherplants.ilp
       - name: Lint
         run: |
           # stop the build if there are Python syntax errors or undefined names
