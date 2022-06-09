@@ -1,4 +1,5 @@
 from os import listdir
+from os.path import join
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -53,12 +54,33 @@ def test_segment_count_2():
         assert f"{stem}.plant.2.png" in results
 
 
-def test_analyze():
+def test_analyze_default_k():
     with TemporaryDirectory() as output_path:
         runner = CliRunner()
-        result = runner.invoke(cli.analyze, ['-i', plant_masked_path, '-o', output_path])
-        print(result.output)
+        runner.invoke(cli.analyze, ['-i', plant_masked_path, '-o', output_path])
 
-        results = listdir(output_path)
-        assert len(results) == 1
-        assert f"{Path(plant_masked_path).stem}.colors.csv" in results
+        outputs = listdir(output_path)
+        assert len(outputs) == 1
+
+        csv_name = f"{Path(plant_masked_path).stem}.colors.csv"
+        assert csv_name in outputs
+
+        with open(join(output_path, csv_name)) as results:
+            lines = results.readlines()
+            assert len(lines) == 10
+
+
+def test_analyze_custom_k():
+    with TemporaryDirectory() as output_path:
+        runner = CliRunner()
+        runner.invoke(cli.analyze, ['-i', plant_masked_path, '-o', output_path, '-k', 5])
+
+        outputs = listdir(output_path)
+        assert len(outputs) == 1
+
+        csv_name = f"{Path(plant_masked_path).stem}.colors.csv"
+        assert csv_name in outputs
+
+        with open(join(output_path, csv_name)) as results:
+            lines = results.readlines()
+            assert len(lines) == 5

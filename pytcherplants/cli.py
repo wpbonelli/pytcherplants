@@ -53,7 +53,8 @@ def segment(input, output, count, min_area):
 @click.option('--input', '-i', required=True, type=str)
 @click.option('--output', '-o', required=True, type=str)
 @click.option('--filetypes', '-p', multiple=True, type=str)
-def analyze(input, output, filetypes):
+@click.option('--clusters', '-k', required=False, type=int, default=10)
+def analyze(input, output, filetypes, clusters):
     output_path = Path(output)
     if not output_path.is_dir(): raise ValueError(f"Output must be a valid directory path")
 
@@ -61,11 +62,11 @@ def analyze(input, output, filetypes):
     input_name = input_path.stem
     if input_path.is_dir():
         print(f"Performing color analysis for directory {input_name}")
-        df = ca.analyze_directory(input, filetypes)
+        df = ca.analyze_directory(input, filetypes, k=clusters)
         df.to_csv(join(output, f"{input_name}.colors.csv"))
     elif input_path.is_file():
         print(f"Performing color analysis for image {input_name}")
-        df = ca.analyze_file(input)
+        df = ca.analyze_file(input, k=clusters)
         df.to_csv(join(output, f"{input_name}.colors.csv"))
     else:
         raise ValueError(f"Invalid input path: {input_path}")
