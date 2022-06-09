@@ -24,6 +24,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 pytest coveralls setuptools wheel twine
           pip install -e .
+
+          # install ilastik
+          mkdir /opt/ilastik
+          cd /opt/ilastik
+          curl -O https://files.ilastik.org/ilastik-1.4.0b21-gpu-Linux.tar.bz2
+          tar xjf ilastik-1.*-Linux.tar.bz2
       - name: Lint
         run: |
           # stop the build if there are Python syntax errors or undefined names
