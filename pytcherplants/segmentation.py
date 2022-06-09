@@ -7,7 +7,7 @@ import numpy as np
 
 def segment_plants(
         image_path: str,
-        count: int = None,
+        count: int = 1,
         min_area: int = None) -> List[np.ndarray]:
     """
     Segment plants from background pixels.
@@ -41,12 +41,8 @@ def segment_plants(
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cv2.drawContours(labelled, contours, -1, 255, 3)
     div = 8
-    keep = count if count is not None and count > 0 else 1
-    if keep == 1:
-        min_area = 1
-    else:
-        min_area = min_area if min_area is not None and min_area > 0 else ((image.shape[0] / div) * (image.shape[1] / div))
-    largest = [c for c in nlargest(keep, contours, key=cv2.contourArea) if cv2.contourArea(c) > min_area]
+    min_area = min_area if min_area is not None and min_area > 0 else ((image.shape[0] / div) * (image.shape[1] / div))
+    largest = [c for c in nlargest(count, contours, key=cv2.contourArea) if cv2.contourArea(c) > min_area]
     print(f"Found {len(largest)} plants (minimum area: {min_area} pixels)")
 
     print(f"Cropping contours")
