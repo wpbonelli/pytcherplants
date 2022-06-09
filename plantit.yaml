@@ -1,8 +1,8 @@
-name: "Sarracenia: Pixel Classification"
+name: "Sarracenia: Segmentation"
 author: "Mason McNair"
 public: False
 image: docker://wbonelli/pytcherplants
-commands: pypl classify -i $INPUT -o $OUTPUT
+commands: pypl segment -i $INPUT -o $OUTPUT
 input:
   kind: files
   filetypes:
@@ -16,9 +16,8 @@ output:
     patterns:
       - tif
       - tiff
+      - jpg
       - png
-      - csv
-      - xlsx
 jobqueue:
   walltime: "02:00:00"
   memory: "10GB"
