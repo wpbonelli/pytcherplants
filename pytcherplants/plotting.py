@@ -10,7 +10,8 @@ from pytcherplants.utils import rgb2hex, hue_to_rgb_formatted
 def plot_hex_distribution(proportions: Dict[Tuple[int, int, int], float], title: str):
     x = list([rgb2hex(k).replace('-', '') for k in proportions.keys()])
     y = list(proportions.values())
-    ax = sns.histplot(x=x, weights=y, hue=x, palette=x, discrete=True, title=title)
+    ax = sns.histplot(x=x, weights=y, hue=x, palette=x, discrete=True)
+    ax.set_title(title)
     return ax
 
 

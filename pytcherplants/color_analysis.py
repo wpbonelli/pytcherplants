@@ -10,7 +10,7 @@ import pandas as pd
 
 from pytcherplants.utils import hex2rgb, rgb2hex
 
-HEADERS = ['Image', 'Hex', 'R', 'G', 'B', 'H', 'S', 'V', 'Freq', 'Dens']
+HEADERS = ['Image', 'Hex', 'R', 'G', 'B', 'H', 'S', 'V', 'Freq', 'Prop']
 
 
 def analyze_directory(directory_path: str, filetypes: List[str] = None, k: int = 10) -> pd.DataFrame:
