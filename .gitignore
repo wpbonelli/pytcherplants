@@ -27,3 +27,4 @@ core/__pycache__/
 *.egg-info
 **/__pycache__/**
 venv
+**/.ipynb_checkpoints/**
