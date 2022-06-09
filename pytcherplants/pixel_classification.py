@@ -15,8 +15,6 @@ def renormalize(image: np.ndarray) -> np.ndarray:
 
 
 def classify(input_path: str, output_path: str) -> Tuple[np.ndarray, np.ndarray]:
-    input_stem = Path(input_path).stem
-
     command = f"/opt/ilastik/ilastik-1.4.0b21-gpu-Linux/run_ilastik.sh --headless " + \
               "--project=/opt/pytcherplants/pytcherplants.ilp " + \
               "--output_format=tiff " + \
@@ -27,7 +25,7 @@ def classify(input_path: str, output_path: str) -> Tuple[np.ndarray, np.ndarray]
     subprocess.run(command, shell=True)
 
     original = cv2.imread(input_path)
-    segmented = cv2.imread(join(output_path, f"{input_stem}.segmented.tiff"))
+    segmented = cv2.imread(join(output_path, f"{Path(input_path).stem}.segmented.tiff"))
 
     # ilastik pixel segmentation returns [1, 2], with 1=foreground & 2=background
     # we want to convert this to 0=background, 255=foreground
