@@ -30,6 +30,7 @@ def plot_rgb_distribution(proportions: Dict[Tuple[int, int, int], float], title:
 
 def plot_hue_distribution(proportions: Dict[Tuple[int, int, int], float], title: str) -> go.Figure:
     df = pd.DataFrame(zip([str(k) for k in proportions.keys()], proportions.values()), columns=['bin', 'mass'])
+    cmap = {str(k): f"hsv({str(int(k / 360 * 100))}%, 50%, 50%)" for k in proportions.keys()}
     fig = px.bar_polar(
         df,
         title=f"Hue distribution ({title})",
@@ -38,7 +39,7 @@ def plot_hue_distribution(proportions: Dict[Tuple[int, int, int], float], title:
         theta='bin',
         range_theta=[0, 360],
         color='bin',
-        color_discrete_map={str(k): hue_to_rgb_formatted(k) for k in proportions.keys()},
+        color_discrete_map=cmap,
         labels=None)
     fig.update_layout(showlegend=False, polar_angularaxis_tickfont_size=7, polar_radialaxis_tickfont_size=7)
     return fig
