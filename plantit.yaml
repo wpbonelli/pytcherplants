@@ -14,8 +14,6 @@ output:
   path:
   include:
     patterns:
-      - tif
-      - tiff
       - jpg
       - png
 jobqueue:
