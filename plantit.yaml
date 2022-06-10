@@ -1,4 +1,4 @@
-name: "Sarracenia: Color Analysis"
+name: "Sarracenia: Pixel Classification"
 author: "Mason McNair"
 public: False
 image: docker://wbonelli/pytcherplants
