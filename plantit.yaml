@@ -19,7 +19,7 @@ output:
       - jpg
       - png
 jobqueue:
-  walltime: "02:00:00"
+  walltime: "03:00:00"
   memory: "10GB"
   processes: 1
   cores: 1
