@@ -2,14 +2,7 @@ name: "Sarracenia: Pixel Classification"
 author: "Mason McNair"
 public: False
 image: docker://wbonelli/pytcherplants
-commands: pypl analyze -i $INPUT -o $OUTPUT -k $CLUSTERS
-params:
-  - name: clusters
-    type: number
-    default: 10
-    step: 1
-    min: 2
-    max: 50
+commands: pypl classify -i $INPUT -o $OUTPUT
 input:
   kind: directory
   filetypes:
