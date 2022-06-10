@@ -21,10 +21,6 @@ output:
   path:
   include:
     patterns:
-      - tif
-      - tiff
-      - jpg
-      - png
       - csv
 jobqueue:
   walltime: "02:00:00"
