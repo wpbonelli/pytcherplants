@@ -146,14 +146,16 @@ By default JPG, PNG, and TIFF files are supported. You can select one or the oth
 pypl segment -i <image file> -o <output directory>
 ```
 
-You can specify the number of plants per image by providing an integer `--count`, as well as the minimum contour area `--min_area`. The former defaults to 1, and if the latter is absent, no minimum is applied.
+You can specify the number of plants per image by providing an integer argument `-c (--count)`, as well as the minimum contour area argument `-m (--min_area)`. The former defaults to 1. If the latter is absent, no minimum is applied.
 
 This will produce an output image `<output directory>/<image file stem>.plants.jpg` with each contour labelled, as well as one or more output images e.g. `<output directory>/<image file stem>.plant.0.jpg`, as many as there were plants detected in the input image.
 
 #### Color analysis
 
-Use the `analyze` command to analyze an image's distribution. The image is assumed to have already been segmented and cropped, with just 1 plant per image and background pixels either white or black.
+Use the `analyze` command to analyze an image's distribution. The image is assumed to have already been segmented and cropped, with background pixels either white or black. The image may contain any number of foreground contours (individual plants).
 
 ```shell
 pypl analyze -i <masked image file> -o <output directory>
 ```
+
+To explicitly set the number of clusters for k-means clustering, use the `-k (--clusters)` flag.
