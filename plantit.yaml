@@ -4,7 +4,7 @@ public: False
 image: docker://wbonelli/pytcherplants
 commands: pypl classify -i $INPUT -o $OUTPUT
 input:
-  kind: directory
+  kind: files
   filetypes:
     - tif
     - tiff
@@ -18,7 +18,6 @@ output:
       - tiff
       - jpg
       - png
-      - csv
 jobqueue:
   walltime: "02:00:00"
   memory: "10GB"
