@@ -1,5 +1,6 @@
 from typing import Dict, Tuple
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from plotly import graph_objects as go, express as px
@@ -12,6 +13,7 @@ def plot_hex_distribution(proportions: Dict[Tuple[int, int, int], float], title:
     y = list(proportions.values())
     ax = sns.histplot(x=x, weights=y, hue=x, palette=x, discrete=True)
     ax.set_title(title)
+    plt.ylabel('Proportion')
     return ax
 
 
