@@ -17,6 +17,7 @@ Trait and color analysis for top-down images of pitcher plants, built with [ilas
   - [Using Docker](#using-docker)
   - [Using Singularity](#using-singularity)
   - [Installing the Python package](#installing-the-python-package)
+  - [Jupyter notebooks](#jupyter-notebooks)
   - [Setting up a development environment](#setting-up-a-development-environment)
     - [Developing with Docker](#developing-with-docker)
     - [Using a virtual Python environment](#using-a-virtual-python-environment)
