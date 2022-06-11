@@ -53,7 +53,7 @@ Pixel classification (via [Ilastik](https://www.ilastik.org/)) adapted from [Pet
 
 ## Installation
 
-Docker or Singularity are recommended to run this project.
+Docker or Singularity are recommended to run this project. The Ilastik pixel classification model necessary for certain commands is baked into the Docker image definition.
 
 ### Using Docker
 
@@ -62,14 +62,6 @@ The Docker image is available on Docker Hub at [`wbonelli/pytcherplants`](https:
 ```shell
 docker run -it -v $(pwd):/opt/dev -w /opt/dev wbonelli/pytcherplants bash
 ```
-
-To run a local Jupyter notebook server from the container:
-
-```shell
-docker run -it -p 8888:8888 -v $(pwd):/opt/dev -w /opt/dev wbonelli/pytcherplants jupyter notebook --no-browser --allow-root
-```
-
-The Jupyter UI can then be reached at `localhost:8888`. Then navigate to the `notebooks` directory, open a notebook, and refer to [the Jupyter docs](https://jupyter.org/documentation) if unfamiliar.
 
 ### Using Singularity
 
@@ -83,7 +75,17 @@ Note that Singularity automatically mounts the current working directory; there 
 
 ### Installing the Python package
 
-The `pytcherplants` Python package can also be installed, e.g. `pip install pytcherplants`. **Note that the pixel classification commands expect Ilastik to be installed at `/opt/ilastik/ilastik-1.4.0b21-gpu-Linux/`.**
+The `pytcherplants` Python package can be installed with pip, e.g. `pip install pytcherplants`. **Note that the pixel classification commands expect Ilastik to be installed at `/opt/ilastik/ilastik-1.4.0b21-gpu-Linux/`.**
+
+### Jupyter notebooks
+
+To run a local Jupyter notebook server from a suitable python environment (i.e., with `jupyter` and all the dependencies in `requirements.txt` installed; see below):
+
+```shell
+jupyter notebook --allow-root
+```
+
+The [Jupyter UI](https://jupyter.org/documentation) should automatically open. Then navigate to the `notebooks` directory to open a notebook.
 
 ### Setting up a development environment
 
