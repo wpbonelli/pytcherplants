@@ -55,15 +55,22 @@ def analyze_image(image: np.ndarray, name: str, k: int = 10) -> List[List[str]]:
 def get_clusters(
         image: np.ndarray,
         k: int = 10,
-        filters: List[Tuple[Tuple[int, int, int], Tuple[int, int, int]]] = None) -> Dict[str, int]:
+        filters: List[Tuple[Tuple[int, int, int], Tuple[int, int, int]]] = None,
+        brightness: Tuple[int, int] = (5, 250)) -> Dict[str, int]:
     """
     Performs k-means color clustering on the given image.
 
     :param image: The input image
     :param k: The number of clusters to use
     :param filters: Color bands (in HSV format) to filter out
+    :param brightness: Brightness range (inclusive), values outside it will be omitted
     :return: A dictionary mapping color hex codes to pixel counts
     """
+
+    if brightness[0] < 0 or brightness[0] >= brightness[1] or brightness[0] > 254:
+        raise ValueError(f"Invalid lower brightness bound")
+    if brightness[1] > 255 or brightness[1] <= brightness[0] or brightness[0] < 1:
+        raise ValueError(f"Invalid upper brightness bound")
 
     z = np.float32(image.reshape((-1, 3)))
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
@@ -87,11 +94,11 @@ def get_clusters(
     counts = dict()
     for ii, cc in enumerate(centers):
         # ignore black or white background
-        if all(c < 1 for c in cc):
+        if all(c < brightness[0] for c in cc):
             print(f"Cluster {ii} is black background, ignoring")
             continue
 
-        if all(c > 254 for c in cc):
+        if all(c > brightness[1] for c in cc):
             print(f"Cluster {ii} is white background, ignoring")
             continue
 
