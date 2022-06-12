@@ -31,7 +31,7 @@ def plot_rgb_distribution(proportions: Dict[Tuple[int, int, int], float], title:
     return fig
 
 
-def plot_hue_distribution(proportions: Dict[Tuple[int, int, int], float], title: str) -> go.Figure:
+def plot_hue_distribution(proportions: Dict[int, float], title: str) -> go.Figure:
     df = pd.DataFrame(zip([str(k) for k in proportions.keys()], proportions.values()), columns=['bin', 'mass'])
     cmap = {str(k): f"hsv({str(int(k / 360 * 100))}%, 50%, 50%)" for k in proportions.keys()}
     fig = px.bar_polar(
