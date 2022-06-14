@@ -29,4 +29,9 @@ core/__pycache__/
 venv
 **/.ipynb_checkpoints/**
 *.zip
-notebooks/analyze_*
+notebooks/analyze_cercis.ipynb
+data_sarracenia/groups
+data_sarracenia/masked
+data_sarracenia/masks
+data_sarracenia/plants
+**/.DS_Store
